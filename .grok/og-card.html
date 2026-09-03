@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Outfit";
+        src: url("font.woff2") format("woff2");
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: block;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: #f3f4f0;
+      }
+      .card {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        background: #f3f4f0;
+        color: #142018;
+        font-family: Outfit, ui-sans-serif, sans-serif;
+        overflow: hidden;
+      }
+      .fields {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .lockup {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .mark {
+        width: 252px;
+        height: 276px;
+        margin-bottom: 10px;
+      }
+      h1 {
+        font-size: 128px;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 0.9;
+        color: #142018;
+        text-align: center;
+      }
+      .rule {
+        width: 64px;
+        height: 3px;
+        background: #c8922a;
+        border-radius: 2px;
+        margin: 20px 0 14px;
+      }
+      .tag {
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: #1b5e3b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <svg class="fields" viewBox="0 0 1200 630" aria-hidden="true">
+        <g fill="#1b5e3b" fill-opacity="0.07">
+          <rect x="36" y="48" width="220" height="90" rx="20" />
+          <rect x="276" y="28" width="156" height="72" rx="18" />
+          <rect x="790" y="40" width="188" height="80" rx="18" />
+          <rect x="996" y="78" width="164" height="66" rx="16" />
+          <rect x="28" y="478" width="200" height="84" rx="20" />
+          <rect x="248" y="528" width="148" height="56" rx="14" />
+          <rect x="828" y="508" width="208" height="74" rx="18" />
+          <rect x="1052" y="458" width="120" height="96" rx="20" />
+        </g>
+      </svg>
+      <div class="lockup">
+        <svg class="mark" viewBox="0 0 268 292" fill="none" aria-hidden="true">
+          <ellipse cx="134" cy="278" rx="36" ry="9" fill="#142018" opacity="0.12" />
+          <path
+            d="M134 286C134 286 36 178 36 118C36 64.5 79.5 28 134 28C188.5 28 232 64.5 232 118C232 178 134 286 134 286Z"
+            fill="#1B5E3B"
+          />
+          <circle cx="134" cy="114" r="78" fill="#F3F4F0" />
+          <g transform="translate(134 118) scale(5.15) translate(-16 -16)">
+            <rect x="3" y="10" width="7" height="18" rx="1.5" fill="#1B5E3B" />
+            <rect x="12.5" y="4" width="7" height="24" rx="1.5" fill="#1B5E3B" />
+            <rect x="22" y="12" width="7" height="16" rx="1.5" fill="#1B5E3B" />
+            <rect x="5" y="14" width="3" height="3" rx="0.5" fill="#F3F4F0" />
+            <rect x="14.5" y="8" width="3" height="3" rx="0.5" fill="#F3F4F0" />
+            <rect x="24" y="16" width="3" height="3" rx="0.5" fill="#F3F4F0" />
+          </g>
+          <circle cx="134" cy="268" r="5.5" fill="#C45C3E" />
+        </svg>
+        <h1>Granary</h1>
+        <div class="rule"></div>
+        <p class="tag">Nashik storage</p>
+      </div>
+    </div>
+  </body>
+</html>
