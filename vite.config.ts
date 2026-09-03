@@ -191,10 +191,9 @@ export default defineConfig(({ command, isPreview }) => ({
     port: 8081,
     strictPort: true,
   },
-  resolve: { 
-    tsconfigPaths: true,
+  resolve: {
     alias: {
-      'tslib': 'tslib/tslib.es6.mjs'
+      'tslib': 'tslib'
     }
   },
   plugins: [

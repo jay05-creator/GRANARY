@@ -1,3 +1,5 @@
+import "tslib";
+import { Kysely } from "kysely";
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
 
 /** Which database backend is active. */
