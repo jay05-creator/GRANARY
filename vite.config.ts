@@ -191,7 +191,12 @@ export default defineConfig(({ command, isPreview }) => ({
     port: 8081,
     strictPort: true,
   },
-  resolve: { tsconfigPaths: true },
+  resolve: { 
+    tsconfigPaths: true,
+    alias: {
+      'tslib': 'tslib/tslib.es6.mjs'
+    }
+  },
   plugins: [
     pgliteBootstrapPlugin(),
     devSecurityHeadersPlugin(),
