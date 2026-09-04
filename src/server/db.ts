@@ -1,4 +1,5 @@
-import "tslib";
+import * as tslib from "tslib";
+console.log("Vercel force trace tslib:", typeof tslib.__assign);
 import { Kysely } from "kysely";
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
 
