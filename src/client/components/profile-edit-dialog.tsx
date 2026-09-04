@@ -149,8 +149,8 @@ export function ProfileEditDialog({
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    if (file.size > 2 * 1024 * 1024) {
-                      setError("Image must be smaller than 2MB.");
+                    if (file.size > 5 * 1024 * 1024) {
+                      setError("Image must be smaller than 5MB.");
                       return;
                     }
                     const reader = new FileReader();
@@ -158,13 +158,13 @@ export function ProfileEditDialog({
                       const img = new Image();
                       img.onload = () => {
                         const canvas = document.createElement("canvas");
-                        const MAX_WIDTH = 256;
+                        const MAX_WIDTH = 512;
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext("2d");
                         ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        setPhotoDataUrl(canvas.toDataURL("image/jpeg", 0.8));
+                        setPhotoDataUrl(canvas.toDataURL("image/jpeg", 0.85));
                         setError("");
                       };
                       img.src = event.target?.result as string;
