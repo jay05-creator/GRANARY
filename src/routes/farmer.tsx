@@ -456,10 +456,11 @@ function FarmerDesk() {
         }}
         onSave={async (updates) => {
           const { updateMyProfile } = await import("@/server/modules/granary");
-          await updateMyProfile({ data: updates });
-          if (updates.photo) {
+          const { photo, ...profileUpdates } = updates;
+          await updateMyProfile({ data: profileUpdates });
+          if (photo) {
             const { authClient } = await import("@/shared/auth/client");
-            await authClient.updateUser({ image: updates.photo });
+            await authClient.updateUser({ image: photo });
           }
           refreshFromDb();
           const { getMyProfile } = await import("@/server/modules/granary");

@@ -155,8 +155,19 @@ export function ProfileEditDialog({
                     }
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      setPhotoDataUrl(event.target?.result as string);
-                      setError("");
+                      const img = new Image();
+                      img.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const MAX_WIDTH = 256;
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext("2d");
+                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        setPhotoDataUrl(canvas.toDataURL("image/jpeg", 0.8));
+                        setError("");
+                      };
+                      img.src = event.target?.result as string;
                     };
                     reader.readAsDataURL(file);
                   }}

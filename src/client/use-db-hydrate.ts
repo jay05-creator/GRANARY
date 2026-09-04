@@ -26,19 +26,7 @@ export function useDbHydrate() {
         // Idempotent seed for empty DB (preview / first deploy)
         await seedDemoCatalog();
         const catalog = await loadCatalog();
-        if (catalog.facilityCount > 0) {
-          hydrateFromDb({
-            facilities: catalog.facilities,
-            lots: catalog.lots,
-            farmerRequests: catalog.farmerRequests,
-            farmersList: catalog.farmersList,
-            operatorsList: catalog.operatorsList,
-          });
-        } else {
-          hydrateFromDb({});
-        }
-
-        // Restore auth state from session on page refresh
+        // Restore auth state from session on page refresh FIRST
         if (authEnabled && !isAuthenticated) {
           try {
             const { getMyProfile } = await import("@/server/modules/granary");
@@ -50,6 +38,18 @@ export function useDbHydrate() {
           } catch {
             // Not signed in or session expired — that's fine
           }
+        }
+
+        if (catalog.facilityCount > 0) {
+          hydrateFromDb({
+            facilities: catalog.facilities,
+            lots: catalog.lots,
+            farmerRequests: catalog.farmerRequests,
+            farmersList: catalog.farmersList,
+            operatorsList: catalog.operatorsList,
+          });
+        } else {
+          hydrateFromDb({});
         }
       } catch (err) {
         console.warn("[granary] DB hydrate failed, using seed data:", err);

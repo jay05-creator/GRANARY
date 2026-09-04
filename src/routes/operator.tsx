@@ -545,7 +545,12 @@ function OperatorDesk() {
         }}
         onSave={async (updates) => {
           const { updateMyProfile } = await import("@/server/modules/granary");
-          await updateMyProfile({ data: updates });
+          const { photo, ...profileUpdates } = updates;
+          await updateMyProfile({ data: profileUpdates });
+          if (photo) {
+            const { authClient } = await import("@/shared/auth/client");
+            await authClient.updateUser({ image: photo });
+          }
           refreshFromDb();
           const { getMyProfile } = await import("@/server/modules/granary");
           const p = (await getMyProfile()) as Record<string, unknown> | null;
