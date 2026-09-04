@@ -8,6 +8,9 @@ import { cn } from "@/client/cn";
 import { LogIn, LogOut, User, ChevronDown } from "lucide-react";
 import { farmers, operators } from "@/server/seed";
 import { authClient } from "@/shared/auth/client";
+import { t } from "@/client/i18n";
+import { useLocale } from "@/client/components/locale-provider";
+
 export function SiteHeader() {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -35,6 +38,8 @@ export function SiteHeader() {
   const isEntryPage = path === "/" || path.startsWith("/login");
   const onDesk = path.startsWith("/farmer") || path.startsWith("/operator");
 
+  const { locale } = useLocale();
+
   const handleLogout = () => {
     logout();
     navigate({ to: "/login" });
@@ -51,22 +56,22 @@ export function SiteHeader() {
         <nav className="ml-2 hidden items-center gap-1 md:flex">
           {!isAuthenticated && (
             <NavLink to="/" active={path === "/"}>
-              Home
+              {t("nav.home", locale)}
             </NavLink>
           )}
           {isAuthenticated && role === "farmer" && (
             <NavLink to="/farmer" active={path.startsWith("/farmer")}>
-              Farmer desk
+              {t("nav.farmerDesk", locale)}
             </NavLink>
           )}
           {isAuthenticated && role === "operator" && (
             <NavLink to="/operator" active={path.startsWith("/operator")}>
-              Warehouse
+              {t("nav.warehouse", locale)}
             </NavLink>
           )}
           {!isAuthenticated && (
             <NavLink to="/login" active={path.startsWith("/login")}>
-              Login Portal
+              {t("nav.loginPortal", locale)}
             </NavLink>
           )}
         </nav>
@@ -75,7 +80,7 @@ export function SiteHeader() {
           {isAuthenticated && onDesk && mine.length > 0 && role === "farmer" && (
             <div className="hidden items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground sm:flex">
               <span className="size-1.5 rounded-full bg-pin-mine" />
-              <span className="tabular-nums text-foreground">{mine.length} lots</span>
+              <span className="tabular-nums text-foreground">{mine.length} {t("header.lots", locale)}</span>
               <span className="tabular-nums">{tons(stored)}</span>
             </div>
           )}
@@ -94,10 +99,10 @@ export function SiteHeader() {
               <div className="absolute right-0 top-full pt-1.5 hidden group-hover:block z-50">
                 <div className="w-48 rounded-2xl border border-border bg-card/95 p-2 shadow-2xl backdrop-blur-md">
                   <div className="px-2.5 py-1.5 border-b border-border/60">
-                    <p className="text-[11px] font-medium text-muted-foreground">Active User</p>
+                    <p className="text-[11px] font-medium text-muted-foreground">{t("auth.activeUser", locale)}</p>
                     <p className="text-xs font-semibold text-foreground truncate mt-0.5">{activeUser}</p>
                     <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono capitalize">
-                      {role === "farmer" ? "Farmer Account" : "Warehouse Owner"}
+                      {role === "farmer" ? t("auth.farmerAccount", locale) : t("auth.warehouseOwner", locale)}
                     </p>
                   </div>
                   <button
@@ -106,7 +111,7 @@ export function SiteHeader() {
                     className="mt-1.5 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <LogOut className="size-3.5" />
-                    Log Out
+                    {t("auth.logout", locale)}
                   </button>
                 </div>
               </div>
@@ -117,7 +122,7 @@ export function SiteHeader() {
               className="flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-700 hover:bg-emerald-600 text-white px-3.5 py-1.5 text-xs font-medium transition-colors shadow-sm"
             >
               <LogIn className="size-3.5" />
-              <span>Sign In / Register</span>
+              <span>{t("auth.signIn", locale)}</span>
             </Link>
           )}
 
@@ -129,7 +134,7 @@ export function SiteHeader() {
                 path.startsWith("/farmer") ? "bg-muted text-foreground" : "text-muted-foreground",
               )}
             >
-              Desk
+              {t("header.desk", locale)}
             </Link>
           )}
           {!isEntryPage && role === "operator" && (
@@ -140,7 +145,7 @@ export function SiteHeader() {
                 path.startsWith("/operator") ? "bg-muted text-foreground" : "text-muted-foreground",
               )}
             >
-              Yard
+              {t("header.yard", locale)}
             </Link>
           )}
           <LocaleToggle />

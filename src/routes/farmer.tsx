@@ -23,10 +23,13 @@ import { cn } from "@/client/cn";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
 import { signOut } from "@/shared/auth/client";
 import { useCurrentUser } from "@/shared/auth/use-current-user";
+import { useLocale } from "@/client/components/locale-provider";
+import { t } from "@/client/i18n";
 
 export const Route = createFileRoute("/farmer")({ component: FarmerDesk });
 
 function FarmerDesk() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const isAuthenticated = useGranary((s) => s.isAuthenticated);
   const role = useGranary((s) => s.role);
@@ -261,9 +264,9 @@ function FarmerDesk() {
             </Button>
 
             <div className="grid grid-cols-3 gap-3 md:flex md:gap-8 border-l border-border pl-3 md:pl-5">
-              <MiniStat value={myLots.length} label="Active lots" />
-              <MiniStat value={Number(storedTons.toFixed(1))} decimals={1} suffix=" T" label="In storage" />
-              <MiniStat value={counts.empty} label="Yards open" />
+              <MiniStat value={myLots.length} label={t("farmer.activeLots", locale)} />
+              <MiniStat value={Number(storedTons.toFixed(1))} decimals={1} suffix=" T" label={t("farmer.inStorage", locale)} />
+              <MiniStat value={counts.empty} label={t("farmer.yardsOpen", locale)} />
             </div>
           </div>
         </div>
@@ -382,7 +385,7 @@ function FarmerDesk() {
         </section>
 
         <section className="rounded-3xl bg-card p-4 shadow-[var(--shadow-border)] md:p-5">
-          <h2 className="text-base font-medium">Your lots</h2>
+          <h2 className="text-base font-medium">{t("farmer.myHarvestLots", locale)}</h2>
           {myLots.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
               Nothing stored yet. Pick an available pin and book a bay.

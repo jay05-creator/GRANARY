@@ -20,9 +20,10 @@ import {
   FileText,
   Check,
   X,
-  FileCheck2,
-} from "lucide-react";
+import { FileCheck2 } from "lucide-react";
 import { SiteHeader } from "@/client/components/layout/site-header";
+import { useLocale } from "@/client/components/locale-provider";
+import { t } from "@/client/i18n";
 import { SiteFooter } from "@/client/components/layout/site-footer";
 import { Button } from "@/client/components/ui/button";
 import { SpotlightCard } from "@/client/components/effects/spotlight-card";
@@ -97,6 +98,7 @@ const cardVariants = {
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const login = useGranary((s) => s.login);
   const registerUser = useGranary((s) => s.registerUser);
@@ -466,12 +468,12 @@ function LoginPage() {
               Granary Identity & Accreditation Portal
             </motion.span>
             <h1 className="mt-4 text-3xl font-medium tracking-tight md:text-5xl">
-              {mode === "login" ? "Log in to your desk" : "Create a new account"}
+              {mode === "login" ? t("login.loginTitle", locale) : t("login.registerTitle", locale)}
             </h1>
             <p className="mt-3 text-base text-muted-foreground max-w-xl mx-auto">
               {mode === "login"
-                ? "Select your profile to manage your harvest storage or warehouse capacity."
-                : "Register using your phone number, password, and required warehouse accreditation docs."}
+                ? t("login.loginDesc", locale)
+                : t("login.registerDesc", locale)}
             </p>
           </motion.div>
 
@@ -494,7 +496,7 @@ function LoginPage() {
                 }`}
               >
                 <UserCheck className="size-4" />
-                Sign In
+                {t("login.signInBtn", locale)}
               </motion.button>
               <motion.button
                 type="button"
@@ -507,7 +509,7 @@ function LoginPage() {
                 }`}
               >
                 <UserPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
-                New User
+                {t("login.newUserBtn", locale)}
               </motion.button>
             </div>
           </motion.div>
@@ -532,7 +534,7 @@ function LoginPage() {
                   >
                     <motion.div variants={itemVariants} className="mb-4">
                       <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Account credentials
+                        {t("login.accCreds", locale)}
                       </label>
                     </motion.div>
                     <motion.div variants={itemVariants} className="relative mb-3">
@@ -543,7 +545,7 @@ function LoginPage() {
                         type="tel"
                         value={authPhone}
                         onChange={(e) => setAuthPhone(e.target.value)}
-                        placeholder="Phone number (e.g. 9823012345)"
+                        placeholder={t("login.phonePlaceholder", locale)}
                         autoComplete="tel"
                         className="w-full rounded-xl border border-border bg-muted/40 pl-10 pr-3.5 py-2.5 text-sm font-mono focus:border-emerald-500 focus:outline-none transition-all"
                       />
@@ -621,7 +623,7 @@ function LoginPage() {
                         type="password"
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder="Password"
+                        placeholder={t("login.password", locale)}
                         autoComplete="current-password"
                         className="w-full rounded-xl border border-border bg-muted/40 pl-10 pr-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-all"
                       />
@@ -680,10 +682,10 @@ function LoginPage() {
                       <div>
                         <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
                           <UserPlus className="size-5 text-emerald-600 dark:text-emerald-400" />
-                          Register New User Account
+                          {t("login.registerNewUser", locale)}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                          Create your account with mobile phone number, password, role, and verification docs.
+                          {t("login.registerNewUserDesc", locale)}
                         </p>
                       </div>
                     </motion.div>
@@ -704,7 +706,7 @@ function LoginPage() {
 
                     <motion.div variants={itemVariants}>
                       <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Select Account Role
+                        {t("login.selectAccRole", locale)}
                       </label>
                       <div className="mt-2 grid grid-cols-2 gap-3">
                         <motion.button
@@ -719,7 +721,7 @@ function LoginPage() {
                           }`}
                         >
                           <Tractor className="size-4" />
-                          I am a Farmer
+                          {t("login.iAmFarmer", locale)}
                         </motion.button>
                         <motion.button
                           type="button"
@@ -733,20 +735,20 @@ function LoginPage() {
                           }`}
                         >
                           <Warehouse className="size-4" />
-                          I am a Warehouse Owner
+                          {t("login.iAmOperator", locale)}
                         </motion.button>
                       </div>
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
-                      <label className="text-xs font-semibold text-foreground">Full Name</label>
+                      <label className="text-xs font-semibold text-foreground">{t("login.fullName", locale)}</label>
                       <div className="relative mt-1">
                         <UserIcon className="absolute left-3.5 top-3 size-4 text-muted-foreground" />
                         <motion.input
                           whileFocus={{ scale: 1.01, boxShadow: "0 0 0 2px rgba(16,185,129,0.25)" }}
                           transition={{ duration: 0.2 }}
                           type="text"
-                          placeholder="e.g. Dnyaneshwar Shinde"
+                          placeholder={t("login.namePlaceholder", locale)}
                           value={regName}
                           onChange={(e) => setRegName(e.target.value)}
                           className="w-full rounded-xl border border-border bg-muted/40 pl-10 pr-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none transition-all"
@@ -756,7 +758,7 @@ function LoginPage() {
 
                     <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-semibold text-foreground">Phone Number</label>
+                        <label className="text-xs font-semibold text-foreground">{t("login.phoneNumber", locale)}</label>
                         <div className="relative mt-1">
                           <Phone className="absolute left-3.5 top-3 size-4 text-muted-foreground" />
                           <motion.input

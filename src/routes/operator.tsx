@@ -22,6 +22,8 @@ import { StorageMap, PinLegend } from "@/client/components/map/storage-map";
 import { RequestReviewDialog } from "@/client/components/operator/request-review-dialog";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
 import { signOut } from "@/shared/auth/client";
+import { useLocale } from "@/client/components/locale-provider";
+import { t } from "@/client/i18n";
 
 import { Badge } from "@/client/components/ui/badge";
 import { Progress } from "@/client/components/ui/progress";
@@ -36,6 +38,7 @@ import type { FacilityKind } from "@/shared/types";
 export const Route = createFileRoute("/operator")({ component: OperatorDesk });
 
 function OperatorDesk() {
+  const { locale } = useLocale();
   const navigate = useNavigate();
   const isAuthenticated = useGranary((s) => s.isAuthenticated);
   const role = useGranary((s) => s.role);
@@ -248,7 +251,7 @@ function OperatorDesk() {
               <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-white md:text-3xl">
                 <CountUp value={Number(used.toFixed(1))} decimals={1} suffix=" T" />
               </p>
-              <p className="mt-1 text-[11px] text-green-300/80">Stored harvest lots</p>
+              <p className="mt-1 text-[11px] text-green-300/80">{t("operator.storedLots", locale)}</p>
             </div>
 
             {/* Shade 3: Teal Mint Green (Network Fill %) */}
@@ -272,7 +275,7 @@ function OperatorDesk() {
               <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-white md:text-3xl">
                 <CountUp value={Number(avail.toFixed(1))} decimals={1} suffix=" T" />
               </p>
-              <p className="mt-1 text-[11px] text-lime-300/80">Open storage ready to list</p>
+              <p className="mt-1 text-[11px] text-lime-300/80">{t("operator.openStorage", locale)}</p>
             </div>
 
           </div>
@@ -304,7 +307,7 @@ function OperatorDesk() {
             <div className="flex items-center justify-between px-1">
               <h2 className="text-sm font-bold uppercase tracking-wider text-white drop-shadow-sm flex items-center gap-1.5">
                 <Layers className="size-4 text-emerald-600 dark:text-emerald-400" />
-                Warehouse Sections ({facilities.length})
+                {t("operator.warehouseSections", locale)} ({facilities.length})
               </h2>
               <span className="text-xs text-muted-foreground">Click to inspect on map</span>
             </div>
@@ -383,7 +386,7 @@ function OperatorDesk() {
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium flex items-center gap-2 text-foreground">
               <Tractor className="size-4 text-emerald-600 dark:text-emerald-400" />
-              Incoming Farmer Storage Requests ({pendingRequests.length})
+              {t("operator.incomingRequests", locale)} ({pendingRequests.length})
             </h2>
             <span className="text-xs text-muted-foreground font-mono">
               Click pin or card to Accept / Deny Storage
@@ -446,7 +449,7 @@ function OperatorDesk() {
         <section className="rounded-3xl bg-card p-4 border border-border shadow-[var(--shadow-border)] md:p-5">
           <h2 className="text-base font-medium flex items-center gap-2">
             <PackageCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-            Active Stored Lots Across Your Yards
+            {t("operator.storedLots", locale)}
           </h2>
           {inbound.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">No active lots currently stored on your yards.</p>
