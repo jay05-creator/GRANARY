@@ -468,10 +468,10 @@ function LoginPage() {
               <ShieldCheck className="size-3.5" />
               Granary Identity & Accreditation Portal
             </motion.span>
-            <h1 className="mt-4 text-3xl font-medium tracking-tight md:text-5xl">
+            <h1 className="mt-4 text-3xl font-medium tracking-tight md:text-5xl text-white">
               {mode === "login" ? t("login.loginTitle", locale) : t("login.registerTitle", locale)}
             </h1>
-            <p className="mt-3 text-base text-muted-foreground max-w-xl mx-auto">
+            <p className="mt-3 text-base text-black max-w-xl mx-auto">
               {mode === "login"
                 ? t("login.loginDesc", locale)
                 : t("login.registerDesc", locale)}
