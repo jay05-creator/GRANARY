@@ -10,8 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/client/components/ui/dialog";
-import { User, Phone, MapPin, Building2, Save, X, Trash2, AlertTriangle } from "lucide-react";
+import { User, Phone, MapPin, Building2, Save, X, Trash2, AlertTriangle, Camera } from "lucide-react";
 import { sanitizeName, sanitizePhone, sanitizeLocation } from "@/shared/sanitize";
+import { useCurrentUser } from "@/shared/auth/use-current-user";
 
 interface ProfileData {
   name: string;
@@ -24,7 +25,7 @@ interface ProfileEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: ProfileData;
-  onSave: (updates: { name?: string; phone?: string; villageOrCompany?: string; farmOrContact?: string }) => Promise<void>;
+  onSave: (updates: { name?: string; phone?: string; villageOrCompany?: string; farmOrContact?: string; photo?: string }) => Promise<void>;
   onDeleteAccount?: () => Promise<void>;
 }
 
@@ -39,6 +40,8 @@ export function ProfileEditDialog({
   const [phone, setPhone] = useState(profile.phone);
   const [location, setLocation] = useState(profile.village_or_company);
   const [detail, setDetail] = useState(profile.farm_or_contact);
+  const currentUser = useCurrentUser();
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(currentUser?.profileImageUrl || null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,6 +59,7 @@ export function ProfileEditDialog({
       setPhone(profile.phone);
       setLocation(profile.village_or_company);
       setDetail(profile.farm_or_contact);
+      setPhotoDataUrl(currentUser?.profileImageUrl || null);
       setError("");
       setShowDeleteConfirm(false);
       setDeleteStep(0);
@@ -77,6 +81,7 @@ export function ProfileEditDialog({
         phone: sanitizePhone(phone),
         villageOrCompany: sanitizeLocation(location),
         farmOrContact: sanitizeText(detail),
+        photo: photoDataUrl || undefined,
       });
       onOpenChange(false);
     } catch {
@@ -124,6 +129,43 @@ export function ProfileEditDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Photo Upload */}
+          <div className="flex flex-col items-center justify-center mb-2">
+            <div className="relative group">
+              <div className="size-20 rounded-full bg-muted overflow-hidden border border-border flex items-center justify-center">
+                {photoDataUrl ? (
+                  <img src={photoDataUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="size-8 text-muted-foreground" />
+                )}
+              </div>
+              <label className="absolute inset-0 bg-black/50 text-white rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                <Camera className="size-5 mb-1" />
+                <span className="text-[10px] font-medium">Upload</span>
+                <input
+                  type="file"
+                  accept="image/jpeg, image/png, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 2 * 1024 * 1024) {
+                      setError("Image must be smaller than 2MB.");
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setPhotoDataUrl(event.target?.result as string);
+                      setError("");
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">Click to update photo</p>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-foreground">Full Name</label>
             <div className="relative mt-1">

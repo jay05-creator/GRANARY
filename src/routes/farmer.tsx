@@ -22,6 +22,7 @@ import type { Facility } from "@/shared/types";
 import { cn } from "@/client/cn";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
 import { signOut } from "@/shared/auth/client";
+import { useCurrentUser } from "@/shared/auth/use-current-user";
 
 export const Route = createFileRoute("/farmer")({ component: FarmerDesk });
 
@@ -92,6 +93,7 @@ function FarmerDesk() {
     }
   }, [isAuthenticated, farmerId]);
 
+  const currentUser = useCurrentUser();
   const activeFarmer = useMemo(() => {
     if (myProfile && (myProfile.name || myProfile.farm_or_contact)) {
       const name = String(myProfile.name || "Farmer");
@@ -104,13 +106,13 @@ function FarmerDesk() {
         crops: (myProfile.crops as string[]) || ["Grapes", "Onion"],
         lat: Number(myProfile.lat || 20.08),
         lng: Number(myProfile.lng || 74.11),
-        photo: `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(name)}&backgroundColor=d7e4d4`,
+        photo: currentUser?.profileImageUrl || `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(name)}&backgroundColor=d7e4d4`,
       };
     }
     const found = farmersList.find((f) => f.id === farmerId);
-    if (found) return found;
-    return farmer;
-  }, [myProfile, farmersList, farmerId]);
+    if (found) return { ...found, photo: currentUser?.profileImageUrl || found.photo };
+    return { ...farmer, photo: currentUser?.profileImageUrl || farmer.photo };
+  }, [myProfile, farmersList, farmerId, currentUser]);
   const counts = useMemo(() => {
     let empty = 0;
     let full = 0;
@@ -123,6 +125,16 @@ function FarmerDesk() {
     }
     return { empty, full, mine };
   }, [facilities, lots, farmerId]);
+
+  const dbHydrated = useGranary((s) => s.dbHydrated);
+
+  if (!dbHydrated) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-transparent">
+        <div className="size-8 animate-spin rounded-full border-4 border-emerald-600/30 border-t-emerald-600" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -445,6 +457,10 @@ function FarmerDesk() {
         onSave={async (updates) => {
           const { updateMyProfile } = await import("@/server/modules/granary");
           await updateMyProfile({ data: updates });
+          if (updates.photo) {
+            const { authClient } = await import("@/shared/auth/client");
+            await authClient.updateUser({ image: updates.photo });
+          }
           refreshFromDb();
           const { getMyProfile } = await import("@/server/modules/granary");
           const p = (await getMyProfile()) as Record<string, unknown> | null;

@@ -107,6 +107,16 @@ function OperatorDesk() {
     [all, op],
   );
 
+  const dbHydrated = useGranary((s) => s.dbHydrated);
+
+  if (!dbHydrated) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-transparent">
+        <div className="size-8 animate-spin rounded-full border-4 border-emerald-600/30 border-t-emerald-600" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-[100dvh] flex-col bg-transparent text-foreground">
