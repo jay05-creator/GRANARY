@@ -185,6 +185,10 @@ export const useGranary = create<GranaryState>((set, get) => ({
     if (!facility) return { ok: false, error: "Yard facility not found." };
     const op = state.operatorsList.find((o) => o.id === state.operatorId) || operators[0];
 
+    if (!op.facilityIds.includes(facilityId)) {
+      return { ok: false, error: "You do not have permission to allocate this facility." };
+    }
+
     const used = occupancyOf(facility, state.lots);
     if (facility.capacityTons - used < req.tons) {
       return { ok: false, error: "The selected facility does not have enough capacity for this request." };

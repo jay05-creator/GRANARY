@@ -44,7 +44,7 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
 
   const operatorFacilities = useMemo(() => {
     const op = operatorsList.find((o) => o.id === operatorId);
-    if (!op) return allFacilities;
+    if (!op) return [];
     return allFacilities.filter((f) => op.facilityIds.includes(f.id));
   }, [operatorsList, operatorId, allFacilities]);
 
@@ -92,14 +92,16 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
         });
         // Re-hydrate store from DB so farmer sees the new lot on map
         await refreshFromDb();
-      } catch (e) {
-        console.warn("Backend allocate skipped:", e);
+        toast.success("Response sent to farmer!", {
+          description: `Successfully allocated ${request.tons} tons of storage at ${selectedFacility?.name} for ${request.farmerName}.`,
+        });
+        onOpenChange(false);
+        setAction(null);
+      } catch (e: any) {
+        console.warn("Backend allocate failed:", e);
+        toast.error(e.message || "Failed to allocate storage on server.");
+        await refreshFromDb(); // Revert optimistic update
       }
-      toast.success("Response sent to farmer!", {
-        description: `Successfully allocated ${request.tons} tons of storage at ${selectedFacility?.name} for ${request.farmerName}.`,
-      });
-      onOpenChange(false);
-      setAction(null);
     } else {
       toast.error(res.error || "Failed to allocate storage.");
     }
