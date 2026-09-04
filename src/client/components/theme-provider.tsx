@@ -12,9 +12,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("granary-theme") as Theme | null;
-    const next =
-      stored ??
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = stored ?? "light";
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
   }, []);
