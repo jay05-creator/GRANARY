@@ -315,22 +315,17 @@ function OperatorDesk() {
               const pct = occupancyPct(usedF, f.capacityTons);
               const isSelected = selectedId === f.id;
 
-              // Distinct green shading styles based on occupancy level
-              let cardBg = "bg-card border-border";
-              let badgeBg = "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300";
+              // Custom palette styling
+              let cardBg = "bg-[#201513] border-[#4D453A]";
+              let badgeBg = "bg-[#073D2D] text-emerald-400 border-emerald-500/30";
               let progressIndicator = "bg-emerald-500";
-              let shadeLabel = "Low Fill · High Capacity";
 
               if (pct >= 85) {
-                cardBg = "bg-lime-950/10 border-lime-700/40 dark:bg-lime-950/25";
-                badgeBg = "bg-lime-500/20 text-lime-800 border-lime-500/40 dark:text-lime-300 dark:bg-lime-900/50";
-                progressIndicator = "bg-lime-500";
-                shadeLabel = "High Occupancy";
+                badgeBg = "bg-red-950/40 text-red-400 border-red-500/30";
+                progressIndicator = "bg-red-500";
               } else if (pct >= 50) {
-                cardBg = "bg-emerald-950/10 border-emerald-700/40 dark:bg-emerald-950/25";
-                badgeBg = "bg-emerald-600/20 text-emerald-800 border-emerald-600/40 dark:text-emerald-300 dark:bg-emerald-900/50";
-                progressIndicator = "bg-emerald-600";
-                shadeLabel = "Balanced Fill";
+                badgeBg = "bg-amber-950/40 text-amber-400 border-amber-500/30";
+                progressIndicator = "bg-amber-500";
               }
 
               return (
@@ -339,16 +334,16 @@ function OperatorDesk() {
                   type="button"
                   onClick={() => selectFacility(f.id)}
                   className={`group relative overflow-hidden rounded-3xl p-4 text-left border transition-all shadow-[var(--shadow-border)] ${cardBg} ${
-                    isSelected ? "ring-2 ring-emerald-500 shadow-md" : "hover:border-emerald-500/50"
+                    isSelected ? "ring-2 ring-amber-500 shadow-md" : "hover:border-amber-500/50"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium text-base text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      <p className="font-medium text-base text-white group-hover:text-amber-400 transition-colors">
                         {f.name}
                       </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1">
-                        <MapPin className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <p className="mt-0.5 text-xs text-gray-300 flex items-center gap-1">
+                        <MapPin className="size-3 text-amber-500 shrink-0" />
                         {f.city} ({f.address}) · <span className="font-medium">{KIND_LABEL[f.kind]}</span>
                       </p>
                     </div>
@@ -358,20 +353,20 @@ function OperatorDesk() {
                   </div>
 
                   <Progress
-                    className="mt-3.5 h-2"
+                    className="mt-3.5 h-2 bg-[#4D453A]"
                     value={pct}
                     indicatorClassName={progressIndicator}
                   />
 
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground font-mono">
-                    <span>Occupied: <strong className="text-foreground">{tons(usedF)}</strong> / {tons(f.capacityTons)}</span>
-                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Available: {tons(availF)}</span>
+                  <div className="mt-3 flex items-center justify-between text-xs text-gray-400 font-mono">
+                    <span>Occupied: <strong className="text-gray-100">{tons(usedF)}</strong> / {tons(f.capacityTons)}</span>
+                    <span className="text-amber-400 font-semibold">Available: {tons(availF)}</span>
                   </div>
 
-                  <div className="mt-2.5 flex items-center justify-between border-t border-border/50 pt-2 text-[11px]">
-                    <span className="text-muted-foreground font-medium">Rate: ₹{f.ratePerTonDay}/ton/day</span>
+                  <div className="mt-2.5 flex items-center justify-between border-t border-[#4D453A]/50 pt-2 text-[11px]">
+                    <span className="text-gray-300 font-medium">Rate: ₹{f.ratePerTonDay}/ton/day</span>
                     {f.tempRange && (
-                      <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-mono">
+                      <span className="flex items-center gap-1 text-amber-400 font-mono">
                         <Thermometer className="size-3" />
                         {f.tempRange}
                       </span>
