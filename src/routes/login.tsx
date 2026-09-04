@@ -109,7 +109,6 @@ function LoginPage() {
   const currentFarmerId = useGranary((s) => s.farmerId);
   const currentOperatorId = useGranary((s) => s.operatorId);
 
-  // Mode: "login" vs "register"
   const [mode, setMode] = useState<"login" | "register">("login");
 
   // Login Mode State
@@ -452,7 +451,6 @@ function LoginPage() {
       <SiteHeader />
       <main className="flex-1 px-4 py-10 md:px-6 md:py-16">
         <div className="mx-auto max-w-4xl">
-          {/* Header section */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -478,7 +476,6 @@ function LoginPage() {
             </p>
           </motion.div>
 
-          {/* Mode Switcher */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -516,7 +513,6 @@ function LoginPage() {
           </motion.div>
 
           <AnimatePresence mode="wait">
-            {/* =================== LOGIN MODE =================== */}
             {mode === "login" && (
               <motion.div
                 key="login"
@@ -551,7 +547,6 @@ function LoginPage() {
                         className="w-full rounded-xl border border-border bg-muted/40 pl-10 pr-3.5 py-2.5 text-sm font-mono focus:border-emerald-500 focus:outline-none transition-all"
                       />
                     </motion.div>
-                    {/* OTP Section - Shows after phone entry */}
                     {authPhone && !otpVerified && (
                       <motion.div 
                         initial={{ opacity: 0, height: 0 }}
@@ -667,7 +662,6 @@ function LoginPage() {
               </motion.div>
             )}
 
-            {/* =================== REGISTER MODE =================== */}
             {mode === "register" && (
               <motion.div
                 key="register"
@@ -773,7 +767,6 @@ function LoginPage() {
                           />
                         </div>
                       </div>
-                      {/* OTP Verification for Register */}
                       {regPhone && !otpVerified && (
                         <motion.div 
                           initial={{ opacity: 0, height: 0 }}
@@ -899,7 +892,6 @@ function LoginPage() {
                       </div>
                     </motion.div>
 
-                    {/* 3 MANDATORY FILE SUBMISSION OPTIONS FOR WAREHOUSE OWNERS */}
                     <AnimatePresence>
                       {regRole === "operator" && (
                         <motion.div
@@ -972,7 +964,6 @@ function LoginPage() {
   );
 }
 
-// Component for File Upload Option (PDF Only)
 function FileUploadCard({
   label,
   description,

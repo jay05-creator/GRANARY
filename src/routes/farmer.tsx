@@ -45,7 +45,6 @@ function FarmerDesk() {
   const setQuery = useGranary((s) => s.setQuery);
   const refreshFromDb = useGranary((s) => s.refreshFromDb);
 
-  // Re-hydrate on mount so we pick up any lots allocated since last load
   useEffect(() => {
     refreshFromDb();
   }, []);
@@ -70,7 +69,6 @@ function FarmerDesk() {
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
 
-  // Fetch profile
   useEffect(() => {
     if (isAuthenticated) {
       import("@/server/modules/granary").then(({ getMyProfile }) => {
@@ -237,7 +235,6 @@ function FarmerDesk() {
             </div>
           </div>
 
-          {/* AI STORAGE REQUEST & ADVISORY BUTTON */}
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               onClick={() => setProfileEditOpen(true)}

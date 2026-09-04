@@ -55,7 +55,6 @@ function Home() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <SiteHeader />
       <main>
-        {/* HERO INTRODUCTORY SUMMARY SECTION */}
         <section className="relative overflow-hidden border-b border-border">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.35]"
@@ -112,7 +111,6 @@ function Home() {
           </div>
         </section>
 
-        {/* WHAT GRANARY DOES SECTION */}
         <section className="border-b border-border bg-card">
           <div className="mx-auto max-w-[1400px] px-4 py-16 md:px-6 md:py-24">
             <div className="text-center max-w-2xl mx-auto">
@@ -125,7 +123,6 @@ function Home() {
             </div>
 
             <div className="mt-12 grid gap-6 md:grid-cols-2">
-              {/* Farmer Summary Card */}
               <SpotlightCard className="p-8 border border-border bg-background shadow-sm">
                 <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <Tractor className="size-6" />
@@ -150,7 +147,6 @@ function Home() {
                 </ul>
               </SpotlightCard>
 
-              {/* Warehouse Owner Summary Card */}
               <SpotlightCard className="p-8 border border-border bg-background shadow-sm">
                 <div className="size-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                   <Warehouse className="size-6" />
@@ -178,7 +174,6 @@ function Home() {
           </div>
         </section>
 
-        {/* REGISTERED YARDS CAROUSEL OVERVIEW */}
         <section className="px-4 py-16 md:px-6 md:py-20">
           <div className="mx-auto max-w-[1400px]">
             <h2 className="text-2xl font-medium tracking-tight md:text-3xl">
@@ -215,7 +210,6 @@ function Home() {
           </div>
         </section>
 
-        {/* BOTTOM CTA */}
         <section className="px-4 pb-16 md:px-6 md:pb-24">
           <SpotlightCard className="mx-auto max-w-[1400px] bg-forest p-8 text-paper md:p-12">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

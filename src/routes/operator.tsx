@@ -58,12 +58,10 @@ function OperatorDesk() {
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
 
-  // Re-hydrate on mount so we see latest requests and lots
   useEffect(() => {
     refreshFromDb();
   }, []);
 
-  // Fetch profile
   useEffect(() => {
     if (isAuthenticated) {
       import("@/server/modules/granary").then(({ getMyProfile }) => {
@@ -191,7 +189,6 @@ function OperatorDesk() {
       <SiteHeader />
       <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-5 px-3 py-4 md:px-5">
         
-        {/* Warehouse Desk Top Banner */}
         <SpotlightCard className="p-5 md:p-6 border border-emerald-900/30 dark:border-emerald-800/40">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -205,7 +202,6 @@ function OperatorDesk() {
               <p className="mt-1 text-sm text-muted-foreground">{op.contact}</p>
             </div>
 
-            {/* List Available Storage Action Button */}
             <div className="flex items-center gap-3">
               <Button
                 onClick={() => setProfileEditOpen(true)}
@@ -227,10 +223,8 @@ function OperatorDesk() {
             </div>
           </div>
 
-          {/* GREEN SHADED GROUPING METRIC CARDS */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
             
-            {/* Shade 1: Deep Emerald Green (Total Yards) */}
             <div className="rounded-2xl border border-emerald-700/50 bg-emerald-950/80 p-4 text-emerald-50 shadow-md">
               <div className="flex items-center justify-between text-emerald-300">
                 <span className="text-[12px] font-medium uppercase tracking-wider">Total Yards</span>
@@ -242,7 +236,6 @@ function OperatorDesk() {
               <p className="mt-1 text-[11px] text-emerald-300/80">Active registered yards</p>
             </div>
 
-            {/* Shade 2: Rich Sage Green (Storage Occupied) */}
             <div className="rounded-2xl border border-green-700/50 bg-green-900/60 p-4 text-green-50 shadow-md">
               <div className="flex items-center justify-between text-green-300">
                 <span className="text-[12px] font-medium uppercase tracking-wider">Occupied</span>
@@ -254,7 +247,6 @@ function OperatorDesk() {
               <p className="mt-1 text-[11px] text-green-300/80">{t("operator.storedLots", locale)}</p>
             </div>
 
-            {/* Shade 3: Teal Mint Green (Network Fill %) */}
             <div className="rounded-2xl border border-teal-700/50 bg-teal-950/80 p-4 text-teal-50 shadow-md">
               <div className="flex items-center justify-between text-teal-300">
                 <span className="text-[12px] font-medium uppercase tracking-wider">Network Fill</span>
@@ -266,7 +258,6 @@ function OperatorDesk() {
               <p className="mt-1 text-[11px] text-teal-300/80">Occupancy load across network</p>
             </div>
 
-            {/* Shade 4: Leaf / Lime Green (Available Capacity) */}
             <div className="rounded-2xl border border-lime-700/50 bg-lime-950/80 p-4 text-lime-50 shadow-md">
               <div className="flex items-center justify-between text-lime-300">
                 <span className="text-[12px] font-medium uppercase tracking-wider">Available Space</span>
@@ -281,7 +272,6 @@ function OperatorDesk() {
           </div>
         </SpotlightCard>
 
-        {/* MAP & WAREHOUSE SECTIONS GRID */}
         <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.9fr)]">
           <section className="relative h-[48dvh] min-h-[320px] overflow-hidden rounded-3xl bg-muted shadow-[var(--shadow-border)] lg:h-[min(64dvh,640px)]">
             <StorageMap
@@ -302,7 +292,6 @@ function OperatorDesk() {
             </div>
           </section>
 
-          {/* DIFFERENT WAREHOUSE SECTIONS LIST (DISTINCT GREEN SHADING) */}
           <aside className="flex flex-col gap-3.5">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-sm font-bold uppercase tracking-wider text-white drop-shadow-sm flex items-center gap-1.5">
@@ -318,7 +307,6 @@ function OperatorDesk() {
               const pct = occupancyPct(usedF, f.capacityTons);
               const isSelected = selectedId === f.id;
 
-              // Custom palette styling
               let cardBg = "bg-[#201513] border-[#4D453A]";
               let badgeBg = "bg-[#073D2D] text-emerald-400 border-emerald-500/30";
               let progressIndicator = "bg-emerald-500";
@@ -381,7 +369,6 @@ function OperatorDesk() {
           </aside>
         </div>
 
-        {/* INCOMING FARMER STORAGE REQUESTS CARDS SECTION */}
         <section className="rounded-3xl bg-card p-4 border border-emerald-500/30 shadow-[var(--shadow-border)] md:p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium flex items-center gap-2 text-foreground">
@@ -445,7 +432,6 @@ function OperatorDesk() {
           )}
         </section>
 
-        {/* INBOUND HARVEST LOTS TABLE SECTION */}
         <section className="rounded-3xl bg-card p-4 border border-border shadow-[var(--shadow-border)] md:p-5">
           <h2 className="text-base font-medium flex items-center gap-2">
             <PackageCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
@@ -480,7 +466,6 @@ function OperatorDesk() {
 
       </div>
 
-      {/* POP-UP MENU DIALOG FOR ACCEPTING/DENYING FARMER REQUEST */}
       <RequestReviewDialog
         open={!!selectedRequestId}
         onOpenChange={(open) => !open && selectRequest(null)}
@@ -488,11 +473,9 @@ function OperatorDesk() {
       />
 
 
-      {/* OWNER: LIST AVAILABLE STORAGE MODAL */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -501,7 +484,6 @@ function OperatorDesk() {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             />
 
-            {/* Dialog Content */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -582,7 +564,6 @@ function OperatorDesk() {
   );
 }
 
-{/* Storage Listing Form Component */}
 function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
   const addFacility = useGranary((s) => s.addFacility);
 
@@ -631,7 +612,6 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
     setSaving(true);
     setError("");
     try {
-      // Local store for immediate UI
       const fac = addFacility({
         name,
         city,
@@ -643,7 +623,6 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
         crops: selectedCrops,
       });
 
-      // Persist to secure DB when authenticated
       try {
         const { addFacility: addFacilityServer, loadCatalog } = await import(
           "@/server/modules/granary"
