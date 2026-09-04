@@ -206,12 +206,10 @@ export const auth = betterAuth({
     },
   },
 
-  // Cache the session in the short-lived signed `session_data` cookie so reads
-  // (incl. the client's `/get-session`) skip the DB — this shrinks the "loading"
-  // window and reduces auth flicker. See the `auth` skill for the full
-  // flicker-prevention guidance (gate on `isPending`; SSR the session).
+  // Keep session state server-side. A signed session snapshot in a cookie would
+  // add variable-size data to every request and can push Vercel middleware
+  // headers toward its 32 KB limit.
   session: {
-    cookieCache: { enabled: true, maxAge: 300 },
     // Absolute session expiry: 7 days. After this, users must re-authenticate.
     expiresIn: 60 * 60 * 24 * 7,
     // Update session every 1 day to extend active sessions.

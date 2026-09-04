@@ -563,6 +563,10 @@ export function mapRequest(row: FacilityRow) {
     operatorContact: row.operator_contact ? String(row.operator_contact) : undefined,
     notifiedFarmer: Boolean(row.notified_farmer),
     aiAdvisory: row.ai_advisory ? String(row.ai_advisory) : undefined,
+    ignoredByOperatorIds: Array.isArray(row.ignored_by_operator_ids)
+      ? row.ignored_by_operator_ids.map(String)
+      : [],
+    expiresAt: String(row.expires_at ?? new Date().toISOString()),
   };
 }
 

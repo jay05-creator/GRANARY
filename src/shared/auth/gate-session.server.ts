@@ -95,9 +95,8 @@ async function emitSessionCookie(
 }
 
 /**
- * Expire the previous user's `session_data` cookie cache after an identity
- * swap. The cache is signed against the old session and outlives it (5-min
- * TTL), so without this `/get-session` keeps serving the replaced user.
+ * Expire any previous `session_data` cookie after an identity swap. This also
+ * clears cookies left by older deployments that enabled the session cache.
  * Mirrors `emitSessionCookie`'s dual-path delivery: TanStack's response
  * cookie store plus Better Auth's `responseHeaders` bag.
  */
