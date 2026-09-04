@@ -97,8 +97,12 @@ function OperatorDesk() {
     return operatorsList.find((o) => o.id === operatorId) || operatorsList[0];
   }, [myProfile, operatorsList, operatorId]);
   const pendingRequests = useMemo(
-    () => farmerRequests.filter((r) => r.status === "pending"),
-    [farmerRequests]
+    () => farmerRequests.filter((r) => 
+      r.status === "pending" && 
+      !(r.ignoredByOperatorIds || []).includes(operatorId) && 
+      (r.expiresAt ? new Date(r.expiresAt) > new Date() : true)
+    ),
+    [farmerRequests, operatorId]
   );
   const activeReviewRequest =
     farmerRequests.find((r) => r.id === selectedRequestId) || null;

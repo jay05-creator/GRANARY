@@ -70,6 +70,8 @@ export interface FarmerRequest {
   operatorName?: string;
   operatorContact?: string;
   notifiedFarmer?: boolean;
+  ignoredByOperatorIds: string[];
+  expiresAt: string;
 }
 
 export interface Operator {

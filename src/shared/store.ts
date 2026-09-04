@@ -171,6 +171,8 @@ export const useGranary = create<GranaryState>((set, get) => ({
       lng: lng || currentFarmer.lng,
       requestedAt: new Date().toISOString().slice(0, 10),
       status: "pending",
+      ignoredByOperatorIds: [],
+      expiresAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
     };
     set({ farmerRequests: [req, ...state.farmerRequests] });
     return req;
@@ -229,9 +231,12 @@ export const useGranary = create<GranaryState>((set, get) => ({
     return { ok: true, lot: newLot };
   },
   denyFarmerRequest: (requestId) => {
+    const operatorId = get().operatorId;
     set({
       farmerRequests: get().farmerRequests.map((r) =>
-        r.id === requestId ? { ...r, status: "denied" as const, notifiedFarmer: false } : r
+        r.id === requestId 
+          ? { ...r, ignoredByOperatorIds: [...(r.ignoredByOperatorIds || []), operatorId] } 
+          : r
       ),
       selectedRequestId: null,
     });

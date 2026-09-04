@@ -330,6 +330,8 @@ export const listPendingRequests = createServerFn({ method: "GET" })
       return sql`
         select * from farmer_requests
         where status = 'pending'
+          and expires_at > now()
+          and not (${context.userId} = any(ignored_by_operator_ids))
           and (
             preferred_facility_id is null 
             or preferred_facility_id in (select id from facilities where operator_user_id = ${context.userId})
@@ -421,7 +423,8 @@ export const denyRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sql = await getSql();
     await sql`
-      update farmer_requests set status = 'denied', notified_farmer = false
+      update farmer_requests 
+      set ignored_by_operator_ids = array_append(ignored_by_operator_ids, ${context.userId})
       where id = ${data.requestId}
     `;
     return { ok: true as const };

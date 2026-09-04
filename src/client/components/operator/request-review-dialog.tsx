@@ -114,8 +114,8 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
     } catch (e) {
       console.warn("Backend deny skipped:", e);
     }
-    toast.info("Response sent to farmer", {
-      description: `Storage request from ${request.farmerName} has been denied. Notification sent to farmer.`,
+    toast.info("Request hidden from dashboard", {
+      description: `You have ignored the storage request from ${request.farmerName}. It remains open for other operators to accept.`,
     });
     onOpenChange(false);
     setAction(null);
@@ -198,8 +198,8 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
               >
                 <XCircle className="size-7 text-destructive group-hover:scale-110 transition-transform" />
                 <div>
-                  <p className="font-bold text-sm">Deny Request</p>
-                  <p className="text-[11px] opacity-80 mt-0.5">Send denial notice</p>
+                  <p className="font-bold text-sm">Ignore Request</p>
+                  <p className="text-[11px] opacity-80 mt-0.5">Hide from dashboard</p>
                 </div>
               </button>
             </div>
@@ -293,10 +293,10 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
           <div className="mt-3 space-y-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="size-5 shrink-0" />
-              <h4 className="font-semibold text-sm">Confirm Denial of Storage Request</h4>
+              <h4 className="font-semibold text-sm">Confirm Ignoring Request</h4>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to deny the storage request from <strong>{request.farmerName}</strong> for {request.tons} tons of {request.crop}? A response will be sent to the farmer.
+              Are you sure you want to ignore the storage request from <strong>{request.farmerName}</strong> for {request.tons} tons of {request.crop}? It will be hidden from your dashboard but remain open for other operators.
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setAction(null)}>
@@ -308,7 +308,7 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
                 onClick={handleConfirmDenial}
                 className="bg-red-600 text-white hover:bg-red-700 border-red-600 font-medium"
               >
-                Deny & Send Response
+                Ignore Request
               </Button>
 
             </div>
