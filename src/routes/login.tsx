@@ -20,7 +20,8 @@ import {
   FileText,
   Check,
   X,
-import { FileCheck2 } from "lucide-react";
+  FileCheck2,
+} from "lucide-react";
 import { SiteHeader } from "@/client/components/layout/site-header";
 import { useLocale } from "@/client/components/locale-provider";
 import { t } from "@/client/i18n";
