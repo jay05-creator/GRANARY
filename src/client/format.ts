@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 
 export function tons(n: number): string {
-  return `${n.toLocaleString("en-IN", { maximumFractionDigits: 1 })} t`;
+  return `${n.toLocaleString("en-IN", { maximumFractionDigits: 1 })} T`;
 }
 
 export function rupees(n: number): string {

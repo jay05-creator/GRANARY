@@ -101,7 +101,7 @@ function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-forest via-forest/30 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 grid grid-cols-3 gap-px border-t border-paper/15 bg-forest/90 p-4 backdrop-blur-sm">
                   <Stat n={facilities.length} label="Registered Yards" />
-                  <Stat n={240} suffix=" t" label="Peak Capacity" />
+                  <Stat n={240} suffix=" T" label="Peak Capacity" />
                   <Stat n={100} suffix="%" label="Live Map Sync" />
                 </div>
               </div>

@@ -262,7 +262,7 @@ function FarmerDesk() {
 
             <div className="grid grid-cols-3 gap-3 md:flex md:gap-8 border-l border-border pl-3 md:pl-5">
               <MiniStat value={myLots.length} label="Active lots" />
-              <MiniStat value={Number(storedTons.toFixed(1))} decimals={1} suffix=" t" label="In storage" />
+              <MiniStat value={Number(storedTons.toFixed(1))} decimals={1} suffix=" T" label="In storage" />
               <MiniStat value={counts.empty} label="Yards open" />
             </div>
           </div>

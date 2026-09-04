@@ -246,7 +246,7 @@ function OperatorDesk() {
                 <PackageCheck className="size-4 opacity-80" />
               </div>
               <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-white md:text-3xl">
-                <CountUp value={Number(used.toFixed(1))} decimals={1} suffix=" t" />
+                <CountUp value={Number(used.toFixed(1))} decimals={1} suffix=" T" />
               </p>
               <p className="mt-1 text-[11px] text-green-300/80">Stored harvest lots</p>
             </div>
@@ -270,7 +270,7 @@ function OperatorDesk() {
                 <Boxes className="size-4 opacity-80" />
               </div>
               <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-white md:text-3xl">
-                <CountUp value={Number(avail.toFixed(1))} decimals={1} suffix=" t" />
+                <CountUp value={Number(avail.toFixed(1))} decimals={1} suffix=" T" />
               </p>
               <p className="mt-1 text-[11px] text-lime-300/80">Open storage ready to list</p>
             </div>
@@ -302,7 +302,7 @@ function OperatorDesk() {
           {/* DIFFERENT WAREHOUSE SECTIONS LIST (DISTINCT GREEN SHADING) */}
           <aside className="flex flex-col gap-3.5">
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white drop-shadow-sm flex items-center gap-1.5">
                 <Layers className="size-4 text-emerald-600 dark:text-emerald-400" />
                 Warehouse Sections ({facilities.length})
               </h2>
@@ -324,8 +324,8 @@ function OperatorDesk() {
                 badgeBg = "bg-red-950/40 text-red-400 border-red-500/30";
                 progressIndicator = "bg-red-500";
               } else if (pct >= 50) {
-                badgeBg = "bg-amber-950/40 text-amber-400 border-amber-500/30";
-                progressIndicator = "bg-amber-500";
+                badgeBg = "bg-emerald-950/40 text-emerald-400 border-emerald-500/30";
+                progressIndicator = "bg-emerald-500";
               }
 
               return (
@@ -334,16 +334,16 @@ function OperatorDesk() {
                   type="button"
                   onClick={() => selectFacility(f.id)}
                   className={`group relative overflow-hidden rounded-3xl p-4 text-left border transition-all shadow-[var(--shadow-border)] ${cardBg} ${
-                    isSelected ? "ring-2 ring-amber-500 shadow-md" : "hover:border-amber-500/50"
+                    isSelected ? "ring-2 ring-emerald-500 shadow-md" : "hover:border-emerald-500/50"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium text-base text-white group-hover:text-amber-400 transition-colors">
+                      <p className="font-medium text-base text-white group-hover:text-emerald-400 transition-colors">
                         {f.name}
                       </p>
                       <p className="mt-0.5 text-xs text-gray-300 flex items-center gap-1">
-                        <MapPin className="size-3 text-amber-500 shrink-0" />
+                        <MapPin className="size-3 text-emerald-500 shrink-0" />
                         {f.city} ({f.address}) · <span className="font-medium">{KIND_LABEL[f.kind]}</span>
                       </p>
                     </div>
@@ -360,13 +360,13 @@ function OperatorDesk() {
 
                   <div className="mt-3 flex items-center justify-between text-xs text-gray-400 font-mono">
                     <span>Occupied: <strong className="text-gray-100">{tons(usedF)}</strong> / {tons(f.capacityTons)}</span>
-                    <span className="text-amber-400 font-semibold">Available: {tons(availF)}</span>
+                    <span className="text-emerald-400 font-semibold">Available: {tons(availF)}</span>
                   </div>
 
                   <div className="mt-2.5 flex items-center justify-between border-t border-[#4D453A]/50 pt-2 text-[11px]">
                     <span className="text-gray-300 font-medium">Rate: ₹{f.ratePerTonDay}/ton/day</span>
                     {f.tempRange && (
-                      <span className="flex items-center gap-1 text-amber-400 font-mono">
+                      <span className="flex items-center gap-1 text-emerald-400 font-mono">
                         <Thermometer className="size-3" />
                         {f.tempRange}
                       </span>
