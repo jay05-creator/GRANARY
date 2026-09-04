@@ -91,7 +91,13 @@ export const authConfigured =
 // it derives the origin per-request from the (proxied) host, validated against the
 // preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
 // the broker's preview client accepts.
-const explicitBaseURL = env("BETTER_AUTH_URL");
+const vercelUrl = env("VERCEL_URL") ? `https://${env("VERCEL_URL")}` : undefined;
+const vercelProjectUrl = env("VERCEL_PROJECT_PRODUCTION_URL") ? `https://${env("VERCEL_PROJECT_PRODUCTION_URL")}` : undefined;
+
+const rawBaseURL = env("BETTER_AUTH_URL") || vercelProjectUrl || vercelUrl;
+// Strip trailing slash which causes "Invalid origin" mismatches
+const explicitBaseURL = rawBaseURL ? rawBaseURL.replace(/\/+$/, "") : undefined;
+
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
@@ -115,15 +121,16 @@ const baseURL = explicitBaseURL ?? {
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
-  : [
-      // Host wildcards (matched against Origin's host)
-      ...previewAllowedHosts,
-      // Full-origin wildcards (matched against Origin)
-      ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ...LOCAL_DEV_ORIGINS,
-    ];
+const trustedOrigins: string[] = [
+  ...(explicitBaseURL ? [explicitBaseURL] : []),
+  ...(vercelUrl ? [vercelUrl] : []),
+  ...(vercelProjectUrl ? [vercelProjectUrl] : []),
+  ...LOCAL_DEV_ORIGINS,
+  // Host wildcards (matched against Origin's host)
+  ...previewAllowedHosts,
+  // Full-origin wildcards (matched against Origin)
+  ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+];
 
 const databaseUrl = env("DATABASE_URL");
 
