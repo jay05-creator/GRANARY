@@ -442,6 +442,19 @@ export const dismissFarmerNotificationDb = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const releaseLotServer = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((data: unknown) => z.object({ lotId: z.string() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const sql = await getSql();
+    await sql`
+      update lots
+      set status = 'released'
+      where id = ${data.lotId} and farmer_user_id = ${context.userId}
+    `;
+    return { ok: true as const };
+  });
+
 // ——— Encrypted documents ———
 
 const docUploadSchema = z.object({

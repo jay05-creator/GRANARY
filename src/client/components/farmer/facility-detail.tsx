@@ -54,16 +54,24 @@ export function FacilityDetail({
     setReleaseError("");
   };
 
-  const handleReleaseFinal = () => {
+  const handleReleaseFinal = async () => {
     if (releaseText !== "RELEASE") {
       setReleaseError('Type RELEASE to confirm.');
       return;
     }
     if (!releaseTarget) return;
-    releaseLot(releaseTarget.id);
-    setReleaseStep(0);
-    setReleaseTarget(null);
-    setReleaseText("");
+    
+    try {
+      const { releaseLotServer } = await import("@/server/modules/granary");
+      await releaseLotServer({ data: { lotId: releaseTarget.id } });
+      
+      releaseLot(releaseTarget.id);
+      setReleaseStep(0);
+      setReleaseTarget(null);
+      setReleaseText("");
+    } catch (err) {
+      setReleaseError(err instanceof Error ? err.message : "Server error, failed to release.");
+    }
   };
 
   const closeReleaseDialog = () => {
