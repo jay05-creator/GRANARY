@@ -1,0 +1,25 @@
+{
+  "headers": [
+    {
+      "source": "/clear.html",
+      "headers": [
+        {
+          "key": "Set-Cookie",
+          "value": "__Host-grok-auth.session_token=; Path=/; Secure; SameSite=Lax; Max-Age=0"
+        },
+        {
+          "key": "Set-Cookie",
+          "value": "__Host-grok-auth.session_data=; Path=/; Secure; SameSite=Lax; Max-Age=0"
+        },
+        {
+          "key": "Set-Cookie",
+          "value": "__Host-grok-auth.account_data=; Path=/; Secure; SameSite=Lax; Max-Age=0"
+        },
+        {
+          "key": "Set-Cookie",
+          "value": "__Host-grok-auth.dont_remember=; Path=/; Secure; SameSite=Lax; Max-Age=0"
+        }
+      ]
+    }
+  ]
+}
