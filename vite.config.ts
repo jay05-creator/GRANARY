@@ -187,9 +187,7 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: {
-    alias: {
-      tslib: "tslib/tslib.es6.mjs"
-    }
+    alias: {}
   },
   plugins: [
     pgliteBootstrapPlugin(),
