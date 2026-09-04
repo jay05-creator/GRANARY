@@ -51,14 +51,7 @@ function pgliteBootstrapPlugin(): Plugin {
 }
 
 /**
- * Live-preview OAuth popup — handled HERE so the agent never has to create a
- * `/auth/popup` route (and cannot break it by scaffolding a React page that
- * paints the full app shell in the popup).
- *
- * `signIn` (client.ts) opens `/auth/popup?providerId=…` in a top-level window.
- * This middleware runs before TanStack Start, calls `handleAuthPopupRequest`,
- * and returns the 302 / completion HTML. Deployed apps do not use the popup
- * (full-page OAuth redirect), so `apply: "serve"` is enough.
+ * Live-preview OAuth popup
  */
 function authPopupPlugin(): Plugin {
   return {
@@ -173,8 +166,6 @@ function devSecurityHeadersPlugin(): Plugin {
 }
 
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
-// The dev server starts once `src/router.tsx` and `src/routes/` exist — see
-// AGENTS.md § "First scaffold".
 export default defineConfig(({ command, isPreview }) => ({
   server: {
     host: "0.0.0.0",

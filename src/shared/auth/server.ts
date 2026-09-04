@@ -85,12 +85,7 @@ const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET
 export const authConfigured =
   !authDisabled && Boolean(grokClientId && grokClientSecret);
 
-// This app's own Better Auth origin. When deployed the deployer injects the
-// public URL. In the sandbox live preview there's no fixed URL (each preview gets
-// a dynamic `*.grok-sandbox.com` host), so we hand Better Auth a dynamic baseURL:
-// it derives the origin per-request from the (proxied) host, validated against the
-// preview allowlist, which makes the OAuth `redirect_uri` the concrete preview URL
-// the broker's preview client accepts.
+// This app's own Better Auth origin.
 const vercelUrl = env("VERCEL_URL") ? `https://${env("VERCEL_URL")}` : undefined;
 const vercelProjectUrl = env("VERCEL_PROJECT_PRODUCTION_URL") ? `https://${env("VERCEL_PROJECT_PRODUCTION_URL")}` : undefined;
 

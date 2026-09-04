@@ -29,7 +29,7 @@ import { SpotlightCard } from "@/client/components/effects/spotlight-card";
 import { LeafBackground } from "@/client/components/effects/leaf-background";
 import { useGranary } from "@/shared/store";
 import type { Role } from "@/shared/types";
-import { authClient, authEnabled } from "@/shared/auth/client";
+import { authClient, authEnabled, setBearerToken } from "@/shared/auth/client";
 import { emailAndPasswordEnabled } from "@/shared/auth/email-password";
 import {
   normalizePhone,
@@ -248,10 +248,14 @@ function LoginPage() {
 
         // Direct sign-in via Better Auth
         const syntheticEmail = phoneToSyntheticEmail(authPhone.trim());
-        const { error } = await authClient.signIn.email({
+        const { data, error } = await authClient.signIn.email({
           email: syntheticEmail,
           password: authPassword,
         });
+
+        if (data?.token) {
+          setBearerToken(data.token);
+        }
 
         if (error) {
           const { recordAuthAttempt, logAuditEvent } = await import("@/server/modules/phone-otp");
@@ -355,11 +359,15 @@ function LoginPage() {
 
         // Direct sign-up via Better Auth
         const syntheticEmail = phoneToSyntheticEmail(regPhone.trim());
-        const { error } = await authClient.signUp.email({
+        const { data, error } = await authClient.signUp.email({
           email: syntheticEmail,
           password: regPassword,
           name: regName.trim(),
         });
+
+        if (data?.token) {
+          setBearerToken(data.token);
+        }
 
         if (error) {
           const { recordAuthAttempt, logAuditEvent } = await import("@/server/modules/phone-otp");
