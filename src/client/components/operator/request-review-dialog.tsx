@@ -52,20 +52,33 @@ export function RequestReviewDialog({ open, onOpenChange, request }: Props) {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>("");
 
   useEffect(() => {
-    if (operatorFacilities.length > 0 && !selectedFacilityId) {
-      setSelectedFacilityId(operatorFacilities[0].id);
+    if (operatorFacilities.length > 0 && !selectedFacilityId && request) {
+      // Auto-select the first facility that has enough room
+      const firstAvailable = operatorFacilities.find((f) => {
+        const used = occupancyOf(f);
+        return f.capacityTons - used >= request.tons;
+      });
+      if (firstAvailable) {
+        setSelectedFacilityId(firstAvailable.id);
+      }
     }
-  }, [operatorFacilities, selectedFacilityId]);
+  }, [operatorFacilities, selectedFacilityId, request, occupancyOf]);
 
   if (!request) return null;
 
-  const targetFacilityId = selectedFacilityId || operatorFacilities[0]?.id || "";
+  const targetFacilityId = selectedFacilityId;
   const selectedFacility = operatorFacilities.find((f) => f.id === targetFacilityId);
 
 
   const handleConfirmAllocation = async () => {
-    if (!targetFacilityId) {
+    if (!targetFacilityId || !selectedFacility) {
       toast.error("Please select an available storage facility to allocate.");
+      return;
+    }
+
+    const used = occupancyOf(selectedFacility);
+    if (selectedFacility.capacityTons - used < request.tons) {
+      toast.error("The selected facility does not have enough space for this request.");
       return;
     }
 

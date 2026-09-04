@@ -373,6 +373,17 @@ export const allocateRequest = createServerFn({ method: "POST" })
     const req = reqs[0];
     if (!req) throw new Error("Request not found or already handled");
 
+    // Check capacity on the backend
+    const lotsResult = await sql`
+      select sum(tons) as total_used from lots 
+      where facility_id = ${data.facilityId} and status != 'released'
+    `;
+    const extraUsed = Number(lotsResult[0]?.total_used || 0);
+    const totalUsed = fac.base_occupied_tons + extraUsed;
+    if (fac.capacity_tons - totalUsed < req.tons) {
+      throw new Error("Facility does not have enough capacity left to accept this request");
+    }
+
     const storedAt = new Date();
     const until = new Date(storedAt);
     until.setDate(until.getDate() + Number(req.days));

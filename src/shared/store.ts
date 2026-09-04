@@ -183,6 +183,11 @@ export const useGranary = create<GranaryState>((set, get) => ({
     if (!facility) return { ok: false, error: "Yard facility not found." };
     const op = state.operatorsList.find((o) => o.id === state.operatorId) || operators[0];
 
+    const used = occupancyOf(facility, state.lots);
+    if (facility.capacityTons - used < req.tons) {
+      return { ok: false, error: "The selected facility does not have enough capacity for this request." };
+    }
+
     const storedAt = new Date();
     const until = new Date(storedAt);
     until.setDate(until.getDate() + req.days);
