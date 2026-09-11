@@ -48,6 +48,7 @@ export interface Person {
   lat: number;
   lng: number;
   photo: string;
+  phone?: string;
 }
 
 export type RequestStatus = "pending" | "approved" | "denied";
@@ -81,6 +82,7 @@ export interface Operator {
   name: string;
   contact: string;
   facilityIds: string[];
+  phone?: string;
   wdraNumber?: string;
   isWdraVerified?: boolean;
 }

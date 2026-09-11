@@ -111,15 +111,6 @@ function LoginPage() {
 
   const [mode, setMode] = useState<"login" | "register">("login");
 
-  // Login Mode State
-  const [loginRole, setLoginRole] = useState<Role>("farmer");
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string>(
-    currentFarmerId || (farmersList[0] ? farmersList[0].id : "farmer-meera"),
-  );
-  const [selectedOperatorId, setSelectedOperatorId] = useState<string>(
-    currentOperatorId || (operatorsList[0] ? operatorsList[0].id : "op-sahyadri"),
-  );
-
   // 3 Warehouse Document Upload States
   const [warehouseDoc, setWarehouseDoc] = useState<File | null>(null);
   const [capacityDoc, setCapacityDoc] = useState<File | null>(null);
@@ -226,23 +217,74 @@ function LoginPage() {
     }
 
     const cleanPhone = authPhone.trim();
-    const isAdmin =
-      cleanPhone === "9999999999" ||
-      authPassword.toLowerCase() === "admin" ||
-      authPassword.toLowerCase() === "admin123";
-
-    if (isAdmin) {
-      toast.success("Signed in as Admin!", {
-        description: `Accessing ${loginRole === "farmer" ? "Farmer" : "Warehouse Owner"} Desk.`,
-      });
-      const adminId = loginRole === "farmer" ? "admin" : "op-admin";
-      login(loginRole, adminId);
-      navigate({ to: loginRole === "farmer" ? "/farmer" : "/operator" });
-      return;
-    }
-
     setAuthLoading(true);
+
     try {
+      let resolvedRole: Role | null = null;
+      let resolvedId: string | null = null;
+      let resolvedName: string | null = null;
+
+      // 1. Check server DB via lookupProfileByPhone
+      try {
+        const { lookupProfileByPhone } = await import("@/server/modules/granary");
+        const res = await lookupProfileByPhone({ data: { phone: cleanPhone } });
+        if (res.found && res.profile) {
+          resolvedRole = res.profile.role;
+          resolvedId = res.profile.userId;
+          resolvedName = res.profile.name;
+        }
+      } catch (dbErr) {
+        console.warn("[AUTH] Server profile lookup notice:", dbErr);
+      }
+
+      // 2. Client store fallback lookup
+      if (!resolvedRole) {
+        const digitsOnly = cleanPhone.replace(/\D/g, "");
+        const matchFarmer = farmersList.find((f) => {
+          const fPhone = (f.phone || "").replace(/\D/g, "");
+          return fPhone && digitsOnly && (fPhone === digitsOnly || fPhone.endsWith(digitsOnly) || digitsOnly.endsWith(fPhone));
+        });
+        if (matchFarmer) {
+          resolvedRole = "farmer";
+          resolvedId = matchFarmer.id;
+          resolvedName = matchFarmer.name;
+        } else {
+          const matchOp = operatorsList.find((o) => {
+            const oPhone = ((o.phone || o.contact) || "").replace(/\D/g, "");
+            return oPhone && digitsOnly && (oPhone === digitsOnly || oPhone.endsWith(digitsOnly) || digitsOnly.endsWith(oPhone));
+          });
+          if (matchOp) {
+            resolvedRole = "operator";
+            resolvedId = matchOp.id;
+            resolvedName = matchOp.name;
+          }
+        }
+      }
+
+      // 3. Demo fallback numbers
+      if (!resolvedRole) {
+        const digitsOnly = cleanPhone.replace(/\D/g, "");
+        if (digitsOnly === "9822099887" || digitsOnly.endsWith("9822099887")) {
+          resolvedRole = "farmer";
+          resolvedId = "farmer-meera";
+          resolvedName = "Meera Kulkarni";
+        } else if (digitsOnly === "9823012345" || digitsOnly.endsWith("9823012345")) {
+          resolvedRole = "operator";
+          resolvedId = "op-sahyadri";
+          resolvedName = "Sahyadri Cold Chain";
+        }
+      }
+
+      // If not found in DB or registered lists
+      if (!resolvedRole || !resolvedId) {
+        setAuthLoading(false);
+        setAuthError(
+          "No registered account found with this mobile number. Please check your number or click 'New User' to register."
+        );
+        return;
+      }
+
+      // 4. Authenticate via Better Auth if enabled
       if (authEnabled && emailAndPasswordEnabled) {
         const syntheticEmail = phoneToSyntheticEmail(cleanPhone);
         const { data, error } = await authClient.signIn.email({
@@ -255,24 +297,19 @@ function LoginPage() {
         }
 
         if (error) {
-          console.warn("[AUTH] Notice:", error.message);
+          console.warn("[AUTH] Better Auth notice:", error.message);
         }
       }
 
       toast.success("Signed in successfully!", {
-        description: `Welcome to ${loginRole === "farmer" ? "Farmer" : "Warehouse"} Desk.`,
+        description: `Welcome back, ${resolvedName || (resolvedRole === "farmer" ? "Farmer" : "Warehouse Owner")}!`,
       });
-      const targetId = loginRole === "farmer" ? "farmer-meera" : "op-sahyadri";
-      login(loginRole, targetId);
-      navigate({ to: loginRole === "farmer" ? "/farmer" : "/operator" });
+
+      login(resolvedRole, resolvedId);
+      navigate({ to: resolvedRole === "farmer" ? "/farmer" : "/operator" });
     } catch (err) {
       console.error("[AUTH] Login error:", err);
-      toast.success("Signed in!", {
-        description: `Welcome to ${loginRole === "farmer" ? "Farmer" : "Warehouse"} Desk.`,
-      });
-      const targetId = loginRole === "farmer" ? "farmer-meera" : "op-sahyadri";
-      login(loginRole, targetId);
-      navigate({ to: loginRole === "farmer" ? "/farmer" : "/operator" });
+      setAuthError("Sign-in failed. Please verify your credentials and try again.");
     } finally {
       setAuthLoading(false);
     }
@@ -407,9 +444,6 @@ function LoginPage() {
     }
   }
 
-  const activeFarmer = farmersList.find((f) => f.id === selectedFarmerId) || farmersList[0];
-  const activeOperator = operatorsList.find((o) => o.id === selectedOperatorId) || operatorsList[0];
-
   return (
     <div className="flex min-h-[100dvh] flex-col bg-transparent text-foreground relative overflow-hidden">
       <LeafBackground />
@@ -497,61 +531,6 @@ function LoginPage() {
                       </p>
                     </div>
 
-                    {/* Desk Role Selector */}
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2 text-center">
-                        Select Desk Access
-                      </label>
-                      <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted p-1">
-                        <button
-                          type="button"
-                          onClick={() => setLoginRole("farmer")}
-                          className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium transition-all ${
-                            loginRole === "farmer"
-                              ? "bg-emerald-700 text-white shadow-sm font-semibold"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Tractor className="size-4" />
-                          Farmer Desk
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setLoginRole("operator")}
-                          className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium transition-all ${
-                            loginRole === "operator"
-                              ? "bg-emerald-700 text-white shadow-sm font-semibold"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Warehouse className="size-4" />
-                          Warehouse Owner
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Admin Test Banner */}
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 truncate">
-                        <ShieldCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        <div className="truncate">
-                          <span className="font-semibold block text-[11px]">Admin Test ID (Works for Farmer & Owner)</span>
-                          <span className="font-mono text-[10px]">Mobile: 9999999999 | Pass: admin</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthPhone("9999999999");
-                          setAuthPassword("admin");
-                          toast.info("Admin credentials filled!");
-                        }}
-                        className="shrink-0 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 text-[11px] font-medium transition-all"
-                      >
-                        Auto Fill
-                      </button>
-                    </div>
-
                     {/* Form Inputs */}
                     <div className="space-y-3">
                       <div>
@@ -562,7 +541,7 @@ function LoginPage() {
                             type="tel"
                             value={authPhone}
                             onChange={(e) => setAuthPhone(e.target.value)}
-                            placeholder="e.g. 9999999999"
+                            placeholder="e.g. 9822099887"
                             autoComplete="tel"
                             className="w-full rounded-xl border border-border bg-muted/40 pl-10 pr-3.5 py-2.5 text-sm font-mono focus:border-emerald-500 focus:outline-none transition-all"
                           />
@@ -611,7 +590,7 @@ function LoginPage() {
                         />
                       ) : (
                         <span className="flex items-center justify-center gap-1">
-                          Sign In to {loginRole === "farmer" ? "Farmer Desk" : "Warehouse Desk"} <ArrowRight className="size-4 ml-1" />
+                          Sign In <ArrowRight className="size-4 ml-1" />
                         </span>
                       )}
                     </Button>

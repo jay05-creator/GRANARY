@@ -178,7 +178,9 @@ export default defineConfig(({ command, isPreview }) => ({
     strictPort: true,
   },
   resolve: {
-    alias: {}
+    alias: {
+      "@": join(process.cwd(), "src"),
+    },
   },
   plugins: [
     pgliteBootstrapPlugin(),

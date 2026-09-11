@@ -17,6 +17,7 @@ export const farmer: Person = {
   lat: 20.0797,
   lng: 74.1106,
   photo: "https://api.dicebear.com/9.x/lorelei/svg?seed=MeeraKulkarni&backgroundColor=d7e4d4",
+  phone: "9822099887",
 };
 
 export const adminFarmer: Person = {
@@ -83,6 +84,7 @@ export const operators: Operator[] = [
     name: "Sahyadri Cold Chain",
     contact: "ops@sahyadri-chain.in",
     facilityIds: ["fac-mohadi", "fac-igatpuri", "fac-dindori"],
+    phone: "9823012345",
   },
   {
     id: "op-coldstar",

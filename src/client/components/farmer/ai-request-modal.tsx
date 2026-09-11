@@ -35,57 +35,7 @@ export interface AiRequestModalProps {
 
 type CropName = "Grapes" | "Onion" | "Tomato" | "Pomegranate" | "Wheat";
 
-interface CropData {
-  currentPrice: number; // ₹/kg
-  projectedPrice: number; // ₹/kg in requested days
-  ambientSafeDays: number;
-  coldStorageSafeDays: number;
-  dailySpoilagePercent: number;
-  optimalTemp: string;
-}
-
-const CROP_DATA: Record<CropName, CropData> = {
-  Grapes: {
-    currentPrice: 45,
-    projectedPrice: 54,
-    ambientSafeDays: 4,
-    coldStorageSafeDays: 30,
-    dailySpoilagePercent: 3.5,
-    optimalTemp: "0°C – 2°C (90% RH)",
-  },
-  Onion: {
-    currentPrice: 18,
-    projectedPrice: 22,
-    ambientSafeDays: 14,
-    coldStorageSafeDays: 60,
-    dailySpoilagePercent: 1.8,
-    optimalTemp: "15°C – 20°C (Dry ventilated)",
-  },
-  Tomato: {
-    currentPrice: 24,
-    projectedPrice: 21,
-    ambientSafeDays: 5,
-    coldStorageSafeDays: 18,
-    dailySpoilagePercent: 4.0,
-    optimalTemp: "8°C – 12°C",
-  },
-  Pomegranate: {
-    currentPrice: 95,
-    projectedPrice: 112,
-    ambientSafeDays: 10,
-    coldStorageSafeDays: 45,
-    dailySpoilagePercent: 2.0,
-    optimalTemp: "5°C – 7°C",
-  },
-  Wheat: {
-    currentPrice: 26,
-    projectedPrice: 29,
-    ambientSafeDays: 90,
-    coldStorageSafeDays: 180,
-    dailySpoilagePercent: 0.2,
-    optimalTemp: "18°C – 22°C (Dry silos)",
-  },
-};
+// Removed hardcoded CROP_DATA; will fetch from AI now
 
 export function AiRequestModal({
   open,
@@ -97,35 +47,54 @@ export function AiRequestModal({
   const [daysRequested, setDaysRequested] = useState<number>(15);
   const [location, setLocation] = useState<string>(defaultLocation);
   const [analyzed, setAnalyzed] = useState<boolean>(false);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [aiVerdict, setAiVerdict] = useState<any>(null);
+
   const createFarmerRequest = useGranary((s) => s.createFarmerRequest);
 
-  const cropInfo = CROP_DATA[crop];
-
-  // Calculations
-  const ambientTemp = 31; // Ambient temperature near Niphad/Nashik in °C
-  const mandiRate = cropInfo.currentPrice; // ₹/kg
-  const projectedMandiRate = cropInfo.projectedPrice; // ₹/kg
+  // Dynamic calculations based on AI Verdict
+  const ambientTemp = aiVerdict ? aiVerdict.ambientTemp : 0;
+  const mandiRate = aiVerdict ? aiVerdict.mandiRate : 0;
+  const projectedMandiRate = aiVerdict ? aiVerdict.projectedMandiRate : 0;
   const priceDiff = projectedMandiRate - mandiRate;
 
-  const currentTotalValue = tonsNeeded * 1000 * mandiRate; // ₹
-  const projectedGrossValue = tonsNeeded * 1000 * projectedMandiRate; // ₹
-  const storageCostPerTonDay = 12; // average ₹12/ton/day
-  const totalStorageFee = tonsNeeded * storageCostPerTonDay * daysRequested; // ₹
+  const currentTotalValue = tonsNeeded * 1000 * mandiRate;
+  const projectedGrossValue = tonsNeeded * 1000 * projectedMandiRate;
+  const storageCostPerTonDay = 12;
+  const totalStorageFee = tonsNeeded * storageCostPerTonDay * daysRequested;
 
-  // Daily spoilage loss if stored in ambient environment past safe window
-  const dailyAmbientSpoilageLoss =
-    tonsNeeded * 1000 * mandiRate * (cropInfo.dailySpoilagePercent / 100);
+  const dailyAmbientSpoilageLoss = aiVerdict
+    ? tonsNeeded * 1000 * mandiRate * (aiVerdict.dailyAmbientSpoilagePercent / 100)
+    : 0;
 
-  const daysPastAmbientSafe = Math.max(0, daysRequested - cropInfo.ambientSafeDays);
+  const daysPastAmbientSafe = aiVerdict ? Math.max(0, daysRequested - aiVerdict.ambientSafeDays) : 0;
   const totalAmbientSpoilageLoss = daysPastAmbientSafe * dailyAmbientSpoilageLoss;
 
-  // Net Gain from Cold Storage vs Sell Immediately
   const netGainInColdStorage = projectedGrossValue - currentTotalValue - totalStorageFee;
   const recommendStore = netGainInColdStorage > 0 && priceDiff > 0;
 
-  const handleRunAnalysis = (e: React.FormEvent) => {
+  const handleRunAnalysis = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAnalyzed(true);
+    setAnalyzing(true);
+    setAnalyzed(false);
+    setAiVerdict(null);
+    try {
+      const { generateStorageVerdict } = await import("@/server/modules/granary");
+      const verdict = await generateStorageVerdict({
+        data: {
+          crop,
+          tonsNeeded,
+          daysRequested,
+          location
+        }
+      });
+      setAiVerdict(verdict);
+      setAnalyzed(true);
+    } catch (err: any) {
+      toast.error("AI Analysis Failed", { description: err.message });
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const [submitting, setSubmitting] = useState(false);
@@ -284,6 +253,22 @@ export function AiRequestModal({
                 }`}
             >
               <div className="flex items-start justify-between gap-3">
+                <div className="rounded-2xl border border-border bg-background p-4 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                      Optimal Cold Temp
+                    </h4>
+                    <p className="text-lg font-bold text-sky-600">{aiVerdict.optimalTemp}</p>
+                  </div>
+                  <div className="mt-3">
+                    <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                      Requested Duration
+                    </h4>
+                    <p className="text-sm font-semibold">
+                      {daysRequested} Days
+                    </p>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   {recommendStore ? (
                     <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -308,7 +293,7 @@ export function AiRequestModal({
               <p className="mt-2 text-xs opacity-90 leading-relaxed">
                 {recommendStore
                   ? `Storing ${tonsNeeded} tons of ${crop} in cold storage for ${daysRequested} days avoids ${rupees(totalAmbientSpoilageLoss)} in ambient heat decay and yields an estimated net gain of ${rupees(netGainInColdStorage)} after paying ${rupees(totalStorageFee)} in warehouse fees.`
-                  : `Ambient temperature near ${location} (${ambientTemp}°C) limits safe ambient storage of ${crop} to ${cropInfo.ambientSafeDays} days. Price dynamics indicate selling now at ₹${mandiRate}/kg avoids ${rupees(dailyAmbientSpoilageLoss)}/day in spoilage and storage costs.`}
+                  : `Ambient temperature near ${location} (${ambientTemp}°C) limits safe ambient storage of ${crop} to ${aiVerdict.ambientSafeDays} days. Price dynamics indicate selling now at ₹${mandiRate}/kg avoids ${rupees(dailyAmbientSpoilageLoss)}/day in spoilage and storage costs.`}
               </p>
             </div>
 
@@ -323,15 +308,17 @@ export function AiRequestModal({
                 <p className="text-[10px] text-muted-foreground mt-0.5">Location: {location}</p>
               </div>
 
-              <div className="rounded-2xl border border-border bg-card p-3.5">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Calendar className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  Safe Ambient Window
+              <div className="rounded-2xl border border-border p-4 bg-background">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                  <Calendar className="size-4 text-emerald-600" /> Safe Ambient Window
                 </div>
-                <p className="mt-1 text-lg font-semibold font-mono text-emerald-600 dark:text-emerald-400">
-                  {cropInfo.ambientSafeDays} Days
+                <div className="text-2xl font-bold flex items-baseline gap-1">
+                  <span className="text-emerald-600">{aiVerdict.ambientSafeDays}</span>
+                  <span className="text-emerald-600 text-base">Days</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Cold Room: {aiVerdict.coldStorageSafeDays} Days
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Cold Room: {cropInfo.coldStorageSafeDays} Days</p>
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-3.5">
@@ -342,7 +329,7 @@ export function AiRequestModal({
                 <p className="mt-1 text-lg font-semibold font-mono text-destructive">
                   {rupees(dailyAmbientSpoilageLoss)}/day
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Past Day {cropInfo.ambientSafeDays} ambient</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Past Day {aiVerdict.ambientSafeDays} ambient</p>
               </div>
             </div>
 

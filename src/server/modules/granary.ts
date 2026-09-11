@@ -198,6 +198,48 @@ export const updateMyProfile = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const lookupProfileByPhone = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({
+      phone: z.string().min(3),
+    }).parse(data)
+  )
+  .handler(async ({ data }) => {
+    try {
+      const sql = await getSql();
+      const raw = data.phone.trim();
+      const digits = raw.replace(/\D/g, "");
+      const last10 = digits.slice(-10);
+
+      const rows = await sql`
+        select user_id, role, name, phone, email, village_or_company, farm_or_contact
+        from profiles
+        where phone = ${raw}
+           or phone = ${digits}
+           or (${last10.length >= 7} and phone like ${"%" + last10 + "%"})
+        order by updated_at desc
+        limit 1
+      `;
+
+      if (rows && rows.length > 0) {
+        const p = rows[0];
+        return {
+          found: true as const,
+          profile: {
+            userId: String(p.user_id),
+            role: p.role as "farmer" | "operator",
+            name: String(p.name),
+            phone: String(p.phone || raw),
+          },
+        };
+      }
+      return { found: false as const };
+    } catch (err) {
+      console.warn("[lookupProfileByPhone] Lookup failed:", err);
+      return { found: false as const };
+    }
+  });
+
 // ——— Account Deletion ———
 
 export const deleteMyAccount = createServerFn({ method: "POST" })
@@ -677,6 +719,7 @@ export const loadCatalog = createServerFn({ method: "GET" }).handler(async () =>
       photo:
         String(p.photo) ||
         `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(String(p.name))}`,
+      phone: p.phone ? String(p.phone) : undefined,
     }));
   const operatorsList = profileRows
     .filter((p) => p.role === "operator")
@@ -687,6 +730,7 @@ export const loadCatalog = createServerFn({ method: "GET" }).handler(async () =>
       facilityIds: facilities
         .filter((f) => f.operatorId === String(p.user_id))
         .map((f) => f.id),
+      phone: p.phone ? String(p.phone) : undefined,
     }));
 
   return {
@@ -716,7 +760,7 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
     {
       id: "op-sahyadri",
       name: "Sahyadri Cold Chain",
-      phone: "ops@sahyadri-chain.in",
+      phone: "9823012345",
     },
     { id: "op-coldstar", name: "ColdStar Nashik", phone: "yard@coldstar.in" },
     {
@@ -1005,4 +1049,57 @@ Respond ONLY with a JSON object with this exact structure:
     }));
 
     return results;
+  });
+
+const storageVerdictSchema = z.object({
+  crop: z.string(),
+  tonsNeeded: z.number(),
+  daysRequested: z.number(),
+  location: z.string(),
+});
+
+export const generateStorageVerdict = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((data: unknown) => storageVerdictSchema.parse(data))
+  .handler(async ({ data }) => {
+    const apiKey = process.env.GEMINI_API_KEY_MARKET || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `Act as an expert agricultural storage advisor in India.
+I am a farmer in ${data.location}. I want to store ${data.tonsNeeded} tons of ${data.crop} for ${data.daysRequested} days.
+
+Calculate the exact perishability and financial metrics. The average ambient temperature in this location is roughly what it is right now. Assume cold storage costs 12 rupees per ton per day.
+
+Respond ONLY with a valid JSON object matching this structure:
+{
+  "ambientTemp": <number (estimated ambient temp in Celsius)>,
+  "mandiRate": <number (current price per kg in rupees)>,
+  "projectedMandiRate": <number (projected price per kg in ${data.daysRequested} days)>,
+  "dailyAmbientSpoilagePercent": <number (daily spoilage percentage, e.g. 1.5)>,
+  "ambientSafeDays": <number (max safe days in ambient before rapid rot)>,
+  "coldStorageSafeDays": <number (max safe days in cold storage)>,
+  "optimalTemp": "<string (e.g. '0°C – 2°C (90% RH)')>"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: prompt
+    });
+
+    const text = response.text || "{}";
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
+    const parsed = JSON.parse(jsonMatch[1].trim());
+
+    return {
+      ambientTemp: Number(parsed.ambientTemp),
+      mandiRate: Number(parsed.mandiRate),
+      projectedMandiRate: Number(parsed.projectedMandiRate),
+      dailyAmbientSpoilagePercent: Number(parsed.dailyAmbientSpoilagePercent),
+      ambientSafeDays: Number(parsed.ambientSafeDays),
+      coldStorageSafeDays: Number(parsed.coldStorageSafeDays),
+      optimalTemp: parsed.optimalTemp
+    };
   });

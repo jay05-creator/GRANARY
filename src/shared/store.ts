@@ -298,6 +298,7 @@ export const useGranary = create<GranaryState>((set, get) => ({
         lat: 20.08,
         lng: 74.11,
         photo: `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(input.name)}&backgroundColor=d7e4d4`,
+        phone: input.phone,
       };
       set({
         role: "farmer",
@@ -312,6 +313,7 @@ export const useGranary = create<GranaryState>((set, get) => ({
         name: input.farmOrCompany || `${input.name} Warehousing`,
         contact: input.phone || `${input.name}@granary-storage.in`,
         facilityIds: [],
+        phone: input.phone,
       };
       set({
         role: "operator",
