@@ -78,10 +78,10 @@ const profileSchema = z.object({
 
 export const upsertProfile = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((data: unknown) => profileSchema.parse(data))  .handler(async ({ data, context }) => {
+  .validator((data: unknown) => profileSchema.parse(data)).handler(async ({ data, context }) => {
     const sql = await getSql();
     const userId = context.userId;
-    
+
     // Check if user already exists to prevent overwriting during registration
     const existing = await sql`select role from profiles where user_id = ${userId}`;
     if (existing && existing.length > 0) {
@@ -189,6 +189,8 @@ const facilitySchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
   hours: z.string().max(60).optional(),
+  wdraNumber: z.string().optional(),
+  isWdraVerified: z.boolean().optional(),
 });
 
 export const listMyFacilities = createServerFn({ method: "GET" })
@@ -534,6 +536,8 @@ export function mapFacility(row: FacilityRow) {
     crops,
     photo: String(row.photo ?? ""),
     hours: String(row.hours ?? "6:00 – 20:00"),
+    wdraNumber: row.wdra_number ? String(row.wdra_number) : undefined,
+    isWdraVerified: Boolean(row.is_wdra_verified ?? row.wdra_number),
   };
 }
 
@@ -871,12 +875,12 @@ export const generateRealMarketAdvisory = createServerFn({ method: "POST" })
       const basePrice = (lot.crop.length * 10) + 15;
       const currentPrice = basePrice + Math.floor(Math.random() * 10) - 5;
       const projectedPrice30Days = currentPrice + Math.floor(Math.random() * 15) - 3;
-      
+
       const costFor30Days = lot.facilityRate * 30;
       const netGainPerTon = (projectedPrice30Days - currentPrice) * 1000;
-      
+
       const recommendation = netGainPerTon > costFor30Days ? "STORE" : "SELL";
-      
+
       const trends = [
         "Market is experiencing lower yields due to off-season weather, prices likely to surge.",
         "High supply in recent weeks is pulling current prices down, but expected to normalize soon.",
@@ -884,7 +888,7 @@ export const generateRealMarketAdvisory = createServerFn({ method: "POST" })
         "Local harvest floods the mandi, short-term holding is recommended if storage is cheap.",
       ];
       const trendReasoning = trends[Math.floor(Math.random() * trends.length)];
-      
+
       return {
         lotId: lot.id,
         currentPrice: Math.max(5, currentPrice),

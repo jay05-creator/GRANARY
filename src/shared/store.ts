@@ -74,6 +74,8 @@ export interface GranaryState {
     crops: string[];
     lat?: number;
     lng?: number;
+    wdraNumber?: string;
+    isWdraVerified?: boolean;
   }) => Facility;
   bookLot: (input: {
     facilityId: string;
@@ -352,6 +354,8 @@ export const useGranary = create<GranaryState>((set, get) => ({
       crops: input.crops.length > 0 ? input.crops : ["Grapes", "Onion"],
       photo: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=75",
       hours: "Open 6:00 to 22:00",
+      wdraNumber: input.wdraNumber,
+      isWdraVerified: input.isWdraVerified,
     };
 
     const updatedFacilities = [...state.facilities, newFacility];

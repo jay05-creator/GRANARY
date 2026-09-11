@@ -128,6 +128,8 @@ export const facilities: Facility[] = [
     crops: ["Grapes", "Pomegranate"],
     photo: u("photo-1537640538966-79f369143f8f"),
     hours: "Open 5:00 to 22:00",
+    wdraNumber: "WDRA/MH/NSK/2024/0142",
+    isWdraVerified: true,
   },
   {
     id: "fac-midc",
@@ -146,6 +148,8 @@ export const facilities: Facility[] = [
     crops: ["Grapes", "Tomato", "Pomegranate"],
     photo: u("photo-1586528116311-ad8dd3c8310d"),
     hours: "Open all day",
+    wdraNumber: "WDRA/MH/NSK/2023/0482",
+    isWdraVerified: true,
   },
   {
     id: "fac-kopargaon",
@@ -164,6 +168,8 @@ export const facilities: Facility[] = [
     crops: ["Sugarcane jaggery", "Onion"],
     photo: u("photo-1587293852726-70cdb56c2866"),
     hours: "Open 6:00 to 21:00",
+    wdraNumber: "WDRA/MH/NPH/2024/0089",
+    isWdraVerified: true,
   },
   {
     id: "fac-lasalgaon",
@@ -178,6 +184,8 @@ export const facilities: Facility[] = [
     capacityTons: 240,
     baseOccupiedTons: 240,
     ratePerTonDay: 9,
+    wdraNumber: "WDRA/MH/LSG/2022/0991",
+    isWdraVerified: true,
     crops: ["Onion"],
     photo: u("photo-1518977676601-b53f82aba655", 1200),
     hours: "Open 6:00 to 19:00",

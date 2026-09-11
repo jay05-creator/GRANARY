@@ -22,6 +22,8 @@ export interface Facility {
   crops: string[];
   photo: string;
   hours: string;
+  wdraNumber?: string;
+  isWdraVerified?: boolean;
 }
 
 export interface Lot {
@@ -79,5 +81,7 @@ export interface Operator {
   name: string;
   contact: string;
   facilityIds: string[];
+  wdraNumber?: string;
+  isWdraVerified?: boolean;
 }
 
