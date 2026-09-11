@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Clock, Snowflake, Sun, Warehouse, AlertTriangle, PackageCheck } from "lucide-react";
 import { Badge } from "@/client/components/ui/badge";
 import { Button } from "@/client/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/client/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/client/components/ui/dialog";
 import { KIND_LABEL } from "@/server/seed";
 import { occupancyPct, rupees, shortDate, tons } from "@/client/format";
 import { pinKindOf, pinLabel, useGranary } from "@/shared/store";
@@ -137,27 +137,7 @@ export function FacilityDetail({
           <p className="text-[13px] font-medium">Your lots here</p>
           <ul className="mt-2 flex flex-col gap-2">
             {mine.map((lot) => (
-              <li
-                key={lot.id}
-                className="flex items-center justify-between rounded-xl bg-muted/70 px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-sm">
-                    {lot.variety} {lot.crop}
-                  </p>
-                  <p className="text-[12px] tabular-nums text-muted-foreground">
-                    {tons(lot.tons)} · until {shortDate(lot.until)}
-                    {lot.status === "inbound" ? " · inbound" : ""}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleReleaseClick(lot)}
-                >
-                  Release
-                </Button>
-              </li>
+              <LotItem key={lot.id} lot={lot} onRelease={() => handleReleaseClick(lot)} />
             ))}
           </ul>
         </div>
@@ -262,5 +242,121 @@ export function FacilityDetail({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function LotItem({ lot, onRelease }: { lot: Lot; onRelease: () => void }) {
+  const [isEditingEnwr, setIsEditingEnwr] = useState(false);
+  const [enwrValue, setEnwrValue] = useState(lot.enwr || "");
+  const [isLoading, setIsLoading] = useState(false);
+  const updateLot = useGranary((s) => s.updateLot);
+
+  const handleSaveEnwr = async () => {
+    setIsLoading(true);
+    try {
+      const { updateLotServer } = await import("@/server/modules/granary");
+      const res = await updateLotServer({ data: { lotId: lot.id, enwr: enwrValue } });
+      if (res.ok) {
+        updateLot(lot.id, { enwr: enwrValue });
+        setIsEditingEnwr(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <li className="flex flex-col gap-2 rounded-xl bg-muted/70 px-3 py-2.5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm">
+            {lot.variety} {lot.crop}
+          </p>
+          <p className="text-[12px] tabular-nums text-muted-foreground">
+            {tons(lot.tons)} · until {shortDate(lot.until)}
+            {lot.status === "inbound" ? " · inbound" : ""}
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={onRelease}>
+          Release
+        </Button>
+      </div>
+      
+      {/* ENWR Section */}
+      <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
+        {lot.enwr && !isEditingEnwr ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium">ENWR No: {lot.enwr}</span>
+            <button
+              onClick={() => setIsEditingEnwr(true)}
+              className="text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+            >
+              Edit
+            </button>
+          </div>
+        ) : (
+          <div className="flex w-full flex-col gap-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground">
+              Enter the respective ENWR no :
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={enwrValue}
+                onChange={(e) => setEnwrValue(e.target.value)}
+                placeholder="e.g. ENWR-12345"
+                className="h-7 flex-1 rounded bg-background px-2 text-xs border border-border outline-none focus:border-emerald-500"
+              />
+              <Button
+                size="sm"
+                className="h-7 text-[11px] px-3 bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={handleSaveEnwr}
+                disabled={isLoading || !enwrValue.trim()}
+              >
+                Save
+              </Button>
+              {isEditingEnwr && lot.enwr && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-[11px] px-2"
+                  onClick={() => {
+                    setIsEditingEnwr(false);
+                    setEnwrValue(lot.enwr || "");
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="self-start text-[11px] text-muted-foreground underline decoration-muted-foreground/30 underline-offset-2 hover:text-foreground">
+            Need help regarding the ENWR ?
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-sm rounded-3xl bg-card p-6 border border-border shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg">What is ENWR?</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground space-y-3">
+            <p>
+              <strong>Electronic Negotiable Warehouse Receipt (ENWR)</strong> is a digital receipt issued by registered warehouses.
+            </p>
+            <p>
+              It allows you to use your stored agricultural produce as collateral for securing bank loans, transferring ownership without physical movement, and participating in electronic trading platforms.
+            </p>
+            <p>
+              If your warehouse operator provided you with an ENWR number when you stored your lot, please enter it here for record keeping.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </li>
   );
 }

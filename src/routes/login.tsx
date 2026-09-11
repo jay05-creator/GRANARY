@@ -111,11 +111,6 @@ function LoginPage() {
 
   const [mode, setMode] = useState<"login" | "register">("login");
 
-  // 3 Warehouse Document Upload States
-  const [warehouseDoc, setWarehouseDoc] = useState<File | null>(null);
-  const [capacityDoc, setCapacityDoc] = useState<File | null>(null);
-  const [wdraDoc, setWdraDoc] = useState<File | null>(null);
-
   // Register Mode State
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
@@ -340,10 +335,7 @@ function LoginPage() {
       return;
     }
 
-    if (regRole === "operator" && (!warehouseDoc || !capacityDoc || !wdraDoc)) {
-      setRegError("Warehouse owners must submit all 3 documentation files (Warehouse Docs, Storage Capacity Docs, and WDRA Verification).");
-      return;
-    }
+
 
     if (authEnabled && emailAndPasswordEnabled) {
       const rateLimitErr = checkRateLimit(regPhone);
@@ -388,7 +380,7 @@ function LoginPage() {
         await resetAuthRateLimit({ data: { phone: regPhone.trim(), action: "sign_up" } }).catch(() => {});
         await logAuditEvent({ data: { event: "sign_up_success", phone: regPhone.trim() } }).catch(() => {});
 
-        await persistProfileAndDocs(regName.trim(), regPhone.trim(), regRole, regDetail, regLocation, syntheticEmail, warehouseDoc, capacityDoc, wdraDoc);
+        await persistProfileAndDocs(regName.trim(), regPhone.trim(), regRole, regDetail, regLocation, syntheticEmail);
 
         toast.success("Account created!", { description: "Welcome to Granary." });
 
@@ -407,14 +399,13 @@ function LoginPage() {
     navigate({ to: newRole === "farmer" ? "/farmer" : "/operator" });
   };
 
-  /** Persist profile + docs to DB after successful auth sign-up */
+  /** Persist profile to DB after successful auth sign-up */
   async function persistProfileAndDocs(
     name: string, phone: string, role: Role, detail: string, location: string,
     syntheticEmail: string,
-    wDoc: File | null, cDoc: File | null, dDoc: File | null,
   ) {
     try {
-      const { upsertProfile, uploadDocument } = await import("@/server/modules/granary");
+      const { upsertProfile } = await import("@/server/modules/granary");
       await upsertProfile({
         data: {
           role, name, phone, email: syntheticEmail,
@@ -423,24 +414,8 @@ function LoginPage() {
           crops: role === "farmer" ? ["Grapes", "Onion"] : [],
         },
       });
-      if (role === "operator" && wDoc && cDoc && dDoc) {
-        const toB64 = (file: File) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve((reader.result as string).split(",")[1] || "");
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        for (const { file, docType } of [
-          { file: wDoc, docType: "warehouse" as const },
-          { file: cDoc, docType: "capacity" as const },
-          { file: dDoc, docType: "wdra" as const },
-        ]) {
-          await uploadDocument({ data: { docType, filename: file.name, mimeType: file.type || "application/octet-stream", contentBase64: await toB64(file) } });
-        }
-      }
     } catch (err) {
-      console.error("Profile / document persist failed:", err);
+      console.error("Profile persist failed:", err);
     }
   }
 
@@ -829,45 +804,7 @@ function LoginPage() {
                       </div>
                     </motion.div>
 
-                    <AnimatePresence>
-                      {regRole === "operator" && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="border-t border-border pt-5 overflow-hidden"
-                        >
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
-                            <FileCheck2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-                            Submit Mandatory Warehouse Documentation Files (3 Required)
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Upload title deed, certified capacity report, and WDRA accreditation certificate.
-                          </p>
 
-                          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                            <FileUploadCard
-                              label="1. Warehouse Documentations"
-                              description="Title deed or lease agreement"
-                              file={warehouseDoc}
-                              onFileChange={setWarehouseDoc}
-                            />
-                            <FileUploadCard
-                              label="2. Storage Capacity Docs"
-                              description="Engineering capacity audit"
-                              file={capacityDoc}
-                              onFileChange={setCapacityDoc}
-                            />
-                            <FileUploadCard
-                              label="3. WDRA Verification"
-                              description="WDRA accreditation certificate"
-                              file={wdraDoc}
-                              onFileChange={setWdraDoc}
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
 
                     <motion.div variants={itemVariants} className="mt-6 border-t border-border pt-5 flex justify-end">
                       <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
@@ -901,106 +838,7 @@ function LoginPage() {
   );
 }
 
-function FileUploadCard({
-  label,
-  description,
-  file,
-  onFileChange,
-}: {
-  label: string;
-  description: string;
-  file: File | null;
-  onFileChange: (f: File | null) => void;
-}) {
-  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMsg("");
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      if (!selected.name.toLowerCase().endsWith(".pdf") && selected.type !== "application/pdf") {
-        setErrorMsg("Only PDF (.pdf) files are allowed.");
-        onFileChange(null);
-        return;
-      }
-      onFileChange(selected);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      transition={{ duration: 0.2 }}
-      className={`rounded-2xl border p-4 transition-all ${
-        file
-          ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-950/30"
-          : errorMsg
-          ? "border-destructive/50 bg-destructive/5"
-          : "border-border bg-card/60 hover:border-emerald-500/40"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">{label}</span>
-        {file ? (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 20 }}
-            className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-white"
-          >
-            <Check className="size-3" />
-          </motion.span>
-        ) : (
-          <UploadCloud className="size-4 text-muted-foreground" />
-        )}
-      </div>
-
-      <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{description} (PDF only)</p>
-
-      {errorMsg && (
-        <p className="text-[10px] font-medium text-destructive mt-1.5 flex items-center gap-1">
-          <ShieldAlert className="size-3 shrink-0" />
-          {errorMsg}
-        </p>
-      )}
-
-      <div className="mt-3">
-        {file ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-between rounded-xl bg-background border border-emerald-500/40 p-2 text-xs"
-          >
-            <div className="flex items-center gap-1.5 truncate">
-              <FileText className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="truncate font-mono text-[11px]">{file.name}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onFileChange(null)}
-              className="text-muted-foreground hover:text-destructive p-0.5"
-            >
-              <X className="size-3.5" />
-            </button>
-          </motion.div>
-        ) : (
-          <label className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-muted/30 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 transition-colors">
-            <UploadCloud className="size-3.5" />
-            Choose PDF File
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </label>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 /** Visual password strength bar with criteria checklist. */
 function PasswordStrengthBar({ password }: { password: string }) {

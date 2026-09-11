@@ -97,6 +97,7 @@ export interface GranaryState {
     days: number;
   }) => { ok: true; lot: Lot } | { ok: false; error: string };
   releaseLot: (lotId: string) => void;
+  updateLot: (lotId: string, updates: Partial<Lot>) => void;
   createFarmerRequest: (input: {
     crop: string;
     variety: string;
@@ -248,6 +249,11 @@ export const useGranary = create<GranaryState>((set, get) => ({
     });
 
     return { ok: true, lot: newLot };
+  },
+  updateLot: (lotId, updates) => {
+    set((state) => ({
+      lots: state.lots.map((l) => (l.id === lotId ? { ...l, ...updates } : l)),
+    }));
   },
   denyFarmerRequest: (requestId) => {
     const operatorId = get().operatorId;

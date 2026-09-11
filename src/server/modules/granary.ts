@@ -557,6 +557,19 @@ export const releaseLotServer = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const updateLotServer = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((data: unknown) => z.object({ lotId: z.string(), enwr: z.string() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const sql = await getSql();
+    await sql`
+      update lots
+      set enwr = ${data.enwr}
+      where id = ${data.lotId} and farmer_user_id = ${context.userId}
+    `;
+    return { ok: true as const };
+  });
+
 // ——— Encrypted documents ———
 
 const docUploadSchema = z.object({
@@ -755,32 +768,17 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
     return { seeded: false as const, reason: "already_has_data", count };
   }
 
-  // Demo operator profiles (ids match seed.ts for continuity)
-  const demoOps = [
-    {
-      id: "op-sahyadri",
-      name: "Sahyadri Cold Chain",
-      phone: "9823012345",
-    },
-    { id: "op-coldstar", name: "ColdStar Nashik", phone: "yard@coldstar.in" },
-    {
-      id: "op-godavari",
-      name: "Godavari Cold Chain",
-      phone: "desk@godavari-cold.in",
-    },
-    {
-      id: "op-deccan",
-      name: "Deccan Warehousing",
-      phone: "hello@deccan-wh.in",
-    },
-    {
-      id: "op-lasal",
-      name: "Lasalgaon Yard Co-op",
-      phone: "yard@lasalgaon.coop",
-    },
-  ];
+  // 10 Demo Operators
+  const ops = [];
+  for (let i = 1; i <= 10; i++) {
+    ops.push({
+      id: `op-${i}`,
+      name: `Operator ${i} Storage`,
+      phone: `99000000${i.toString().padStart(2, '0')}`,
+    });
+  }
 
-  for (const op of demoOps) {
+  for (const op of ops) {
     await sql`
       insert into profiles (user_id, role, name, phone, farm_or_contact, village_or_company)
       values (${op.id}, 'operator', ${op.name}, ${op.phone}, ${op.phone}, 'Nashik')
@@ -788,145 +786,57 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
     `;
   }
 
-  const demoFarmers = [
-    {
-      id: "farmer-meera",
-      name: "Meera Kulkarni",
-      village: "Niphad",
-      farm: "Kulkarni Vineyards",
-      crops: ["Grapes", "Raisins", "Onions"],
-      lat: 20.0797,
-      lng: 74.1106,
-    },
-    {
-      id: "farmer-devidas",
-      name: "Devidas Patil",
-      village: "Lasalgaon",
-      farm: "Patil Organic Farm",
-      crops: ["Onion", "Pomegranate"],
-      lat: 20.142,
-      lng: 74.23,
-    },
-  ];
+  // 10 Demo Farmers
+  const farmers = [];
+  const allCrops = ["Grapes", "Onions", "Raisins", "Pomegranate", "Tomato", "Strawberry"];
+  for (let i = 1; i <= 10; i++) {
+    farmers.push({
+      id: `farmer-${i}`,
+      name: `Farmer ${i} Singh`,
+      village: `Village ${i}`,
+      farm: `Farm ${i}`,
+      crops: [allCrops[(i * 2) % allCrops.length], allCrops[(i * 2 + 1) % allCrops.length]],
+      lat: 20.0 + (Math.random() * 0.2 - 0.1),
+      lng: 74.0 + (Math.random() * 0.2 - 0.1),
+      phone: `98000000${i.toString().padStart(2, '0')}`
+    });
+  }
 
-  for (const f of demoFarmers) {
+  for (const f of farmers) {
     await sql`
       insert into profiles (
         user_id, role, name, village_or_company, farm_or_contact, crops, lat, lng, phone
       ) values (
         ${f.id}, 'farmer', ${f.name}, ${f.village}, ${f.farm},
-        ${f.crops}, ${f.lat}, ${f.lng}, '+91 98220 99887'
+        ${f.crops}, ${f.lat}, ${f.lng}, ${f.phone}
       )
       on conflict (user_id) do nothing
     `;
   }
 
-  const demoFacilities = [
-    {
-      id: "fac-mohadi",
-      op: "op-sahyadri",
-      name: "Sahyadri Packhouse",
-      kind: "packhouse",
-      lat: 20.0869,
-      lng: 74.1130,
-      address: "Mohadi Road, near grape collection shed",
-      city: "Mohadi",
-      capacity: 86,
-      occupied: 41,
-      rate: 18,
-      temp: "0 to 2 C",
-      crops: ["Grapes", "Pomegranate"],
-      photo: "https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=1400&q=75",
-      hours: "Open 5:00 to 22:00",
-    },
-    {
-      id: "fac-midc",
-      op: "op-coldstar",
-      name: "ColdStar Nashik MIDC",
-      kind: "cold",
-      lat: 20.0071,
-      lng: 73.7850,
-      address: "Plot 14, Satpur MIDC",
+  // 10 Facilities (1 per operator)
+  const facilities = [];
+  for (let i = 1; i <= 10; i++) {
+    facilities.push({
+      id: `fac-${i}`,
+      op: `op-${i}`,
+      name: `Warehouse ${i}`,
+      kind: i % 2 === 0 ? "cold" : "dry",
+      lat: 20.0 + (Math.random() * 0.2 - 0.1),
+      lng: 74.0 + (Math.random() * 0.2 - 0.1),
+      address: `Road ${i}`,
       city: "Nashik",
-      capacity: 120,
-      occupied: 64,
-      rate: 22,
-      temp: "-2 to 4 C",
-      crops: ["Grapes", "Tomato", "Pomegranate"],
-      photo: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=75",
-      hours: "Open all day",
-    },
-    {
-      id: "fac-kopargaon",
-      op: "op-godavari",
-      name: "Godavari Cold Chain",
-      kind: "cold",
-      lat: 19.8830,
-      lng: 74.4833,
-      address: "Ahmednagar Road, Kopargaon",
-      city: "Kopargaon",
-      capacity: 70,
-      occupied: 70,
-      rate: 16,
-      temp: "0 to 5 C",
-      crops: ["Onion"],
-      photo: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&w=1400&q=75",
-      hours: "Open 6:00 to 21:00",
-    },
-    {
-      id: "fac-lasalgaon",
-      op: "op-lasal",
-      name: "Lasalgaon Onion Yard",
-      kind: "dry",
-      lat: 20.1330,
-      lng: 74.2374,
-      address: "APMC yard, Lasalgaon",
-      city: "Lasalgaon",
-      capacity: 240,
-      occupied: 240,
-      rate: 9,
-      temp: null as string | null,
-      crops: ["Onion"],
-      photo: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=1200&q=75",
-      hours: "Open 6:00 to 19:00",
-    },
-    {
-      id: "fac-pimpalgaon",
-      op: "op-deccan",
-      name: "Deccan Dry Store",
-      kind: "dry",
-      lat: 20.1640,
-      lng: 73.9865,
-      address: "Pimpalgaon Baswant bypass",
-      city: "Pimpalgaon",
-      capacity: 54,
+      capacity: 100,
       occupied: 0,
-      rate: 11,
-      temp: null as string | null,
-      crops: ["Onion", "Raisins", "Grain"],
-      photo: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1400&q=75",
-      hours: "Open 7:00 to 20:00",
-    },
-    {
-      id: "fac-igatpuri",
-      op: "op-sahyadri",
-      name: "Igatpuri Hill Cold",
-      kind: "cold",
-      lat: 19.6949,
-      lng: 73.5570,
-      address: "Ghoti Road, Igatpuri ghat",
-      city: "Igatpuri",
-      capacity: 38,
-      occupied: 4,
-      rate: 24,
-      temp: "2 to 6 C",
-      crops: ["Grapes", "Strawberry"],
-      photo: "https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=1400&q=75",
+      rate: 15 + i,
+      temp: i % 2 === 0 ? "0 to 2 C" : null,
+      crops: ["Grapes", "Onions"],
+      photo: `https://api.dicebear.com/9.x/shapes/svg?seed=Warehouse${i}`,
       hours: "Open 6:00 to 20:00",
-    },
-  ];
+    });
+  }
 
-  for (const f of demoFacilities) {
+  for (const f of facilities) {
     await sql`
       insert into facilities (
         id, operator_user_id, name, kind, lat, lng, address, city,
@@ -941,20 +851,43 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
     `;
   }
 
-  // One sample pending request
-  await sql`
-    insert into farmer_requests (
-      id, farmer_user_id, farmer_name, farmer_village, farmer_contact,
-      crop, variety, tons, days, lat, lng, status, ai_advisory
-    ) values (
-      'req-demo-1', 'farmer-meera', 'Meera Kulkarni', 'Niphad', '+91 98220 99887',
-      'Grapes', 'Thompson Seedless', 12, 18, 20.0797, 74.1106, 'pending',
-      'Grapes: prefer 0–2°C cold storage. Pre-cool within 6 hours of harvest.'
-    )
-    on conflict (id) do nothing
-  `;
+  // Generate 20 lots: each farmer has 2 crops, stored in 2 different facilities
+  let lotCounter = 1;
+  for (let i = 0; i < 10; i++) {
+    const f = farmers[i];
+    const fac1 = facilities[i % 10];
+    const fac2 = facilities[(i + 1) % 10];
+    
+    // lot 1
+    const lot1Id = `lot-${lotCounter++}`;
+    await sql`
+      insert into lots (
+        id, facility_id, farmer_user_id, crop, variety, tons,
+        stored_at, until_date, status
+      ) values (
+        ${lot1Id}, ${fac1.id}, ${f.id}, ${f.crops[0]}, 'Standard', 10,
+        ${new Date().toISOString().slice(0, 10)},
+        ${new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0, 10)},
+        'stored'
+      ) on conflict (id) do nothing
+    `;
+    
+    // lot 2
+    const lot2Id = `lot-${lotCounter++}`;
+    await sql`
+      insert into lots (
+        id, facility_id, farmer_user_id, crop, variety, tons,
+        stored_at, until_date, status
+      ) values (
+        ${lot2Id}, ${fac2.id}, ${f.id}, ${f.crops[1]}, 'Standard', 10,
+        ${new Date().toISOString().slice(0, 10)},
+        ${new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0, 10)},
+        'stored'
+      ) on conflict (id) do nothing
+    `;
+  }
 
-  return { seeded: true as const, facilities: demoFacilities.length };
+  return { seeded: true as const, facilities: facilities.length };
 });
 
 const aiSchema = z.object({

@@ -19,11 +19,17 @@ import {
   Globe,
   Compass,
   LocateFixed,
+  FileCheck2,
+  UploadCloud,
+  Check,
+  FileText,
+  ShieldCheck,
+  Loader2,
+  FileCheck,
 } from "lucide-react";
 import { SiteHeader } from "@/client/components/layout/site-header";
 import { StorageMap, PinLegend } from "@/client/components/map/storage-map";
 import { RequestReviewDialog } from "@/client/components/operator/request-review-dialog";
-import { DocVerificationModal } from "@/client/components/operator/doc-verification-modal";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
 import { signOut } from "@/shared/auth/client";
 import { useLocale } from "@/client/components/locale-provider";
@@ -60,7 +66,6 @@ function OperatorDesk() {
   const refreshFromDb = useGranary((s) => s.refreshFromDb);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [docVerificationOpen, setDocVerificationOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -208,15 +213,6 @@ function OperatorDesk() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setDocVerificationOpen(true)}
-                variant="outline"
-                size="sm"
-                className="rounded-2xl text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
-              >
-                <ShieldAlert className="size-3.5 mr-1" />
-                Verify Documents
-              </Button>
               <Button
                 onClick={() => setProfileEditOpen(true)}
                 variant="outline"
@@ -486,10 +482,7 @@ function OperatorDesk() {
         request={activeReviewRequest}
       />
 
-      <DocVerificationModal
-        open={docVerificationOpen}
-        onOpenChange={setDocVerificationOpen}
-      />
+
 
 
       <AnimatePresence>
@@ -507,7 +500,7 @@ function OperatorDesk() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative z-10 w-full max-w-lg rounded-3xl bg-card p-6 border border-border shadow-2xl overflow-hidden"
+              className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-card p-4 md:p-6 border border-border shadow-2xl"
             >
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
@@ -595,6 +588,14 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
   const [tempRange, setTempRange] = useState("0 to 4 C");
   const [selectedCrops, setSelectedCrops] = useState<string[]>(["Grapes", "Onion"]);
 
+  const [warehouseDoc, setWarehouseDoc] = useState<File | null>(null);
+  const [capacityDoc, setCapacityDoc] = useState<File | null>(null);
+  const [wdraDoc, setWdraDoc] = useState<File | null>(null);
+
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -608,10 +609,57 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
     }
   };
 
+  const handleVerify = async () => {
+    if (!warehouseDoc || !capacityDoc || !wdraDoc) {
+      setError("Please upload all 3 mandatory documents before verifying.");
+      return;
+    }
 
+    setVerifying(true);
+    setError("");
+    setVerifyResult(null);
+
+    try {
+      const { verifyOwnerDocument } = await import("@/server/modules/verification");
+      
+      const toBase64 = (file: File) => new Promise<{ base64Data: string, mimeType: string, fileName: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Data = (e.target?.result as string).split(',')[1];
+          resolve({ base64Data, mimeType: file.type, fileName: file.name });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const docs = await Promise.all([
+        toBase64(warehouseDoc),
+        toBase64(capacityDoc),
+        toBase64(wdraDoc)
+      ]);
+
+      const res = await verifyOwnerDocument({ data: { documents: docs } });
+      
+      if (res.success && res.isValidDocument) {
+        setIsVerified(true);
+        setVerifyResult(res);
+      } else {
+        setError(res.reasoning || res.error || "Verification failed. Please check your documents.");
+        setVerifyResult(res);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to verify documents");
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isVerified) {
+      setError("Please verify the mandatory warehouse documentation files before publishing.");
+      return;
+    }
     if (!name.trim()) {
       setError("Please enter a warehouse or yard name.");
       return;
@@ -816,15 +864,177 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
         </div>
       </div>
 
-      <div className="border-t border-border pt-4 flex items-center justify-end gap-3">
-        <Button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium shadow-md"
-        >
-          {saving ? "Publishing…" : "Publish Available Storage Space"}
-        </Button>
+      <div className="border-t border-border pt-5">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+          <FileCheck2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+          Submit Mandatory Warehouse Documentation Files (3 Required)
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1 mb-4">
+          Upload title deed, certified capacity report, and WDRA accreditation certificate.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FileUploadCard
+            label="1. Warehouse Documentations"
+            description="Title deed or lease agreement"
+            file={warehouseDoc}
+            onFileChange={setWarehouseDoc}
+          />
+          <FileUploadCard
+            label="2. Storage Capacity Docs"
+            description="Engineering capacity audit"
+            file={capacityDoc}
+            onFileChange={setCapacityDoc}
+          />
+          <FileUploadCard
+            label="3. WDRA Verification"
+            description="WDRA accreditation certificate"
+            file={wdraDoc}
+            onFileChange={setWdraDoc}
+          />
+        </div>
+      </div>
+
+      {verifyResult && verifyResult.isValidDocument && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+          <FileCheck className="size-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Documents Verified Successfully</p>
+            <p className="text-[10px] mt-0.5 opacity-80">{verifyResult.reasoning}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-border pt-4 flex items-center justify-between gap-3">
+        {!isVerified ? (
+          <Button
+            type="button"
+            onClick={handleVerify}
+            disabled={verifying || !warehouseDoc || !capacityDoc || !wdraDoc}
+            variant="outline"
+            className="w-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+          >
+            {verifying ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" /> Verifying...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <ShieldCheck className="size-4" /> Verify Documents
+              </span>
+            )}
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            disabled={saving || !isVerified}
+            className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium shadow-md"
+          >
+            {saving ? "Publishing…" : "Publish Available Storage Space"}
+          </Button>
+        )}
       </div>
     </form>
+  );
+}
+
+function FileUploadCard({
+  label,
+  description,
+  file,
+  onFileChange,
+}: {
+  label: string;
+  description: string;
+  file: File | null;
+  onFileChange: (f: File | null) => void;
+}) {
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMsg("");
+    if (e.target.files && e.target.files[0]) {
+      const selected = e.target.files[0];
+      if (!selected.name.toLowerCase().endsWith(".pdf") && selected.type !== "application/pdf") {
+        setErrorMsg("Only PDF (.pdf) files are allowed.");
+        onFileChange(null);
+        return;
+      }
+      onFileChange(selected);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      transition={{ duration: 0.2 }}
+      className={`rounded-2xl border p-4 transition-all ${
+        file
+          ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-950/30"
+          : errorMsg
+          ? "border-destructive/50 bg-destructive/5"
+          : "border-border bg-card/60 hover:border-emerald-500/40"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-foreground">{label}</span>
+        {file ? (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+            className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-white"
+          >
+            <Check className="size-3" />
+          </motion.span>
+        ) : (
+          <UploadCloud className="size-4 text-muted-foreground" />
+        )}
+      </div>
+
+      <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{description} (PDF only)</p>
+
+      {errorMsg && (
+        <p className="text-[10px] font-medium text-destructive mt-1.5 flex items-center gap-1">
+          <ShieldAlert className="size-3 shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <div className="mt-3">
+        {file ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center justify-between rounded-xl bg-background border border-emerald-500/40 p-2 text-xs"
+          >
+            <div className="flex items-center gap-1.5 truncate">
+              <FileText className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="truncate font-mono text-[11px]">{file.name}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onFileChange(null)}
+              className="text-muted-foreground hover:text-destructive p-0.5"
+            >
+              <X className="size-3.5" />
+            </button>
+          </motion.div>
+        ) : (
+          <label className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-muted/30 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 transition-colors">
+            <UploadCloud className="size-3.5" />
+            Choose PDF File
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </label>
+        )}
+      </div>
+    </motion.div>
   );
 }

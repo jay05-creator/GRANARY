@@ -36,6 +36,7 @@ export interface Lot {
   storedAt: string;
   until: string;
   status: LotStatus;
+  enwr?: string;
 }
 
 export interface Person {

@@ -4,8 +4,13 @@ import { GoogleGenAI } from "@google/genai";
 import { authMiddleware } from "@/shared/auth/middleware";
 
 const verificationSchema = z.object({
-  base64Image: z.string().min(1),
-  mimeType: z.string()
+  documents: z.array(
+    z.object({
+      base64Data: z.string().min(1),
+      mimeType: z.string(),
+      fileName: z.string(),
+    })
+  ).length(3),
 });
 
 export const verifyOwnerDocument = createServerFn({ method: "POST" })
@@ -19,40 +24,48 @@ export const verifyOwnerDocument = createServerFn({ method: "POST" })
       return {
         success: true,
         isValidDocument: true,
-        extractedName: "Demo User",
-        extractedIdNumber: "DOC-1234-5678",
-        documentType: "Demo Document",
-        reasoning: "No Gemini API Key found. Returning mock verification data."
+        extractedName: "Demo Operator",
+        extractedIdNumber: "WDRA-1234-5678",
+        documentType: "Title Deed, Capacity Doc, WDRA",
+        reasoning: "No Gemini API Key found. Returning mock verification data for the 3 documents."
       };
     }
 
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `You are a document verification AI for a warehouse management system.
-Analyze the provided document image (e.g. Aadhaar, PAN, Land Record, or ID card).
+      const prompt = `You are a strict document verification AI for a warehouse management system.
+Analyze the provided 3 documents which represent:
+1. Warehouse Title Deed or Lease Agreement
+2. Storage Capacity Audit / Engineering Report
+3. WDRA (Warehousing Development and Regulatory Authority) Accreditation Certificate
+
 Extract the following information and return ONLY a JSON object with this exact structure:
 {
-  "isValidDocument": <boolean (true if it looks like a valid official document)>,
-  "extractedName": "<string (the person's name found on document, or null)>",
-  "extractedIdNumber": "<string (the ID number found, or null)>",
-  "documentType": "<string (e.g. 'Aadhaar', 'PAN', 'Land Record', or 'Unknown')>",
-  "reasoning": "<string (1 sentence explaining what was found)>"
+  "isValidDocument": <boolean (true if ALL 3 documents look like valid official documents and are relevant to warehouse operation)>,
+  "extractedName": "<string (the operator or company name found across documents, or null)>",
+  "extractedIdNumber": "<string (the WDRA registration number or main ID found, or null)>",
+  "documentType": "<string (e.g. 'Title Deed, Capacity Audit, WDRA Certificate')>",
+  "reasoning": "<string (1-2 sentences explaining if the documents are valid or what is missing/wrong)>"
 }`;
 
+      const contentsParts: any[] = [{ text: prompt }];
+      
+      for (const doc of data.documents) {
+        contentsParts.push({ text: `Filename: ${doc.fileName}` });
+        contentsParts.push({
+          inlineData: {
+            data: doc.base64Data,
+            mimeType: doc.mimeType
+          }
+        });
+      }
+
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-2.5-flash',
         contents: [
           {
             role: "user",
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  data: data.base64Image,
-                  mimeType: data.mimeType
-                }
-              }
-            ]
+            parts: contentsParts,
           }
         ]
       });
@@ -73,7 +86,7 @@ Extract the following information and return ONLY a JSON object with this exact 
       console.error("Gemini API Error:", e);
       return {
         success: false,
-        error: e.message || "Failed to verify document with AI."
+        error: e.message || "Failed to verify documents with AI."
       };
     }
   });
