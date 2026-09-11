@@ -24,6 +24,7 @@ import { geocodeAddress } from "@/shared/geocoding";
 import { SiteHeader } from "@/client/components/layout/site-header";
 import { StorageMap, PinLegend } from "@/client/components/map/storage-map";
 import { RequestReviewDialog } from "@/client/components/operator/request-review-dialog";
+import { DocVerificationModal } from "@/client/components/operator/doc-verification-modal";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
 import { signOut } from "@/shared/auth/client";
 import { useLocale } from "@/client/components/locale-provider";
@@ -60,6 +61,7 @@ function OperatorDesk() {
   const refreshFromDb = useGranary((s) => s.refreshFromDb);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [docVerificationOpen, setDocVerificationOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -207,6 +209,15 @@ function OperatorDesk() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setDocVerificationOpen(true)}
+                variant="outline"
+                size="sm"
+                className="rounded-2xl text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+              >
+                <ShieldAlert className="size-3.5 mr-1" />
+                Verify Documents
+              </Button>
               <Button
                 onClick={() => setProfileEditOpen(true)}
                 variant="outline"
@@ -474,6 +485,11 @@ function OperatorDesk() {
         open={!!selectedRequestId}
         onOpenChange={(open) => !open && selectRequest(null)}
         request={activeReviewRequest}
+      />
+
+      <DocVerificationModal
+        open={docVerificationOpen}
+        onOpenChange={setDocVerificationOpen}
       />
 
 

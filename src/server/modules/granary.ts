@@ -9,6 +9,7 @@ import { authMiddleware } from "@/shared/auth/middleware";
 import { encryptDocument } from "@/server/crypto.server";
 import { sanitizeText, sanitizeName, sanitizePhone, sanitizeLocation } from "@/shared/sanitize";
 import { NASHIK_BELT_CITIES } from "@/shared/geocoding";
+import { GoogleGenAI } from "@google/genai";
 
 // ——— helpers ———
 
@@ -871,30 +872,81 @@ export const generateRealMarketAdvisory = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((data: unknown) => aiSchema.parse(data))
   .handler(async ({ data }) => {
-    return data.lots.map(lot => {
-      const basePrice = (lot.crop.length * 10) + 15;
-      const currentPrice = basePrice + Math.floor(Math.random() * 10) - 5;
-      const projectedPrice30Days = currentPrice + Math.floor(Math.random() * 15) - 3;
+    // using GEMINI_API_KEY_MARKET if they want 2 separate keys, otherwise GEMINI_API_KEY
+    const apiKey = process.env.GEMINI_API_KEY_MARKET || process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      // Fallback to mock data if no key is provided
+      return data.lots.map(lot => {
+        const basePrice = (lot.crop.length * 10) + 15;
+        const currentPrice = basePrice + Math.floor(Math.random() * 10) - 5;
+        const projectedPrice30Days = currentPrice + Math.floor(Math.random() * 15) - 3;
+        
+        const costFor30Days = lot.facilityRate * 30;
+        const netGainPerTon = (projectedPrice30Days - currentPrice) * 1000;
+        
+        const recommendation = netGainPerTon > costFor30Days ? "STORE" : "SELL";
+        
+        const trends = [
+          "Market is experiencing lower yields due to off-season weather, prices likely to surge.",
+          "High supply in recent weeks is pulling current prices down, but expected to normalize soon.",
+          "Export demand is steady, pushing a slight upward trend over the next month.",
+          "Local harvest floods the mandi, short-term holding is recommended if storage is cheap.",
+        ];
+        const trendReasoning = trends[Math.floor(Math.random() * trends.length)];
+        
+        return {
+          lotId: lot.id,
+          currentPrice: Math.max(5, currentPrice),
+          projectedPrice30Days: Math.max(5, projectedPrice30Days),
+          trendReasoning,
+          recommendation
+        };
+      });
+    }
 
-      const costFor30Days = lot.facilityRate * 30;
-      const netGainPerTon = (projectedPrice30Days - currentPrice) * 1000;
+    // Call Gemini API
+    const ai = new GoogleGenAI({ apiKey });
+    const results = await Promise.all(data.lots.map(async (lot) => {
+      try {
+        const prompt = `Analyze the market for ${lot.tons} tons of ${lot.crop} in India. The current storage cost is ${lot.facilityRate} rupees per ton per day.
+Respond ONLY with a JSON object with this exact structure:
+{
+  "currentPrice": <number (current price per kg in rupees)>,
+  "projectedPrice30Days": <number (expected price in 30 days per kg in rupees)>,
+  "trendReasoning": "<string (1-2 sentences explaining the trend)>",
+  "recommendation": "<'STORE' or 'SELL'>"
+}`;
 
-      const recommendation = netGainPerTon > costFor30Days ? "STORE" : "SELL";
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt
+        });
 
-      const trends = [
-        "Market is experiencing lower yields due to off-season weather, prices likely to surge.",
-        "High supply in recent weeks is pulling current prices down, but expected to normalize soon.",
-        "Export demand is steady, pushing a slight upward trend over the next month.",
-        "Local harvest floods the mandi, short-term holding is recommended if storage is cheap.",
-      ];
-      const trendReasoning = trends[Math.floor(Math.random() * trends.length)];
+        const text = response.text || "{}";
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
+        const parsed = JSON.parse(jsonMatch[1].trim());
 
-      return {
-        lotId: lot.id,
-        currentPrice: Math.max(5, currentPrice),
-        projectedPrice30Days: Math.max(5, projectedPrice30Days),
-        trendReasoning,
-        recommendation
-      };
-    });
+        return {
+          lotId: lot.id,
+          currentPrice: Number(parsed.currentPrice),
+          projectedPrice30Days: Number(parsed.projectedPrice30Days),
+          trendReasoning: parsed.trendReasoning,
+          recommendation: parsed.recommendation === "STORE" ? "STORE" : "SELL"
+        };
+      } catch (e) {
+        console.error("Failed to fetch Gemini analysis for lot", lot.id, e);
+        // Fallback for this specific lot
+        const basePrice = (lot.crop.length * 10) + 15;
+        return {
+          lotId: lot.id,
+          currentPrice: basePrice,
+          projectedPrice30Days: basePrice + 5,
+          trendReasoning: "Gemini API failed. Showing baseline projection.",
+          recommendation: "STORE"
+        };
+      }
+    }));
+
+    return results;
   });
