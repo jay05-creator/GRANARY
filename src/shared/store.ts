@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Facility, FacilityKind, FarmerRequest, Lot, MapFilter, Operator, Person, PinKind, Role } from "./types";
+import { NASHIK_BELT_CITIES } from "./geocoding";
 import {
   DEMO_FARMER_ID,
   DEMO_OPERATOR_ID,
@@ -329,9 +330,10 @@ export const useGranary = create<GranaryState>((set, get) => ({
     const currentOp = state.operatorsList.find((o) => o.id === state.operatorId);
     const opName = currentOp ? currentOp.name : "Yard Operator";
     
-    // Default coordinates near Nashik belt if not specified
-    const lat = input.lat || (20.0 + (Math.random() - 0.5) * 0.3);
-    const lng = input.lng || (73.9 + (Math.random() - 0.5) * 0.3);
+    // Coordinates from input (e.g. Nominatim geocoding) or town fallback
+    const cityDefault = NASHIK_BELT_CITIES[input.city] || NASHIK_BELT_CITIES.Nashik || { lat: 20.08, lng: 74.11 };
+    const lat = typeof input.lat === "number" ? input.lat : cityDefault.lat;
+    const lng = typeof input.lng === "number" ? input.lng : cityDefault.lng;
     
     const newFacility: Facility = {
       id: `fac-${Date.now()}`,

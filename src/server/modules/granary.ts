@@ -8,7 +8,7 @@ import { getSql } from "@/server/db";
 import { authMiddleware } from "@/shared/auth/middleware";
 import { encryptDocument } from "@/server/crypto.server";
 import { sanitizeText, sanitizeName, sanitizePhone, sanitizeLocation } from "@/shared/sanitize";
-
+import { NASHIK_BELT_CITIES } from "@/shared/geocoding";
 
 // ——— helpers ———
 
@@ -235,8 +235,9 @@ export const addFacility = createServerFn({ method: "POST" })
       throw new Error("Only operators can list storage. Complete operator registration first.");
     }
     const id = newId("fac");
-    const lat = data.lat ?? 20.0 + Math.random() * 0.3;
-    const lng = data.lng ?? 73.8 + Math.random() * 0.4;
+    const cityMatch = NASHIK_BELT_CITIES[data.city] || NASHIK_BELT_CITIES.Nashik || { lat: 20.08, lng: 74.11 };
+    const lat = typeof data.lat === "number" ? data.lat : cityMatch.lat;
+    const lng = typeof data.lng === "number" ? data.lng : cityMatch.lng;
     // Sanitize user input before storage
     const sanitizedName = sanitizeName(data.name);
     const sanitizedAddress = sanitizeLocation(data.address);

@@ -14,6 +14,7 @@ import { KIND_LABEL } from "@/server/seed";
 import { useGranary } from "@/shared/store";
 import { useLocale } from "@/client/components/locale-provider";
 import { t } from "@/client/i18n";
+import type { Role } from "@/shared/types";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -22,33 +23,12 @@ function Home() {
   const isAuthenticated = useGranary((s) => s.isAuthenticated);
   const role = useGranary((s) => s.role);
   const { locale } = useLocale();
+  const farmerId = useGranary((s) => s.farmerId);
+  const operatorId = useGranary((s) => s.operatorId);
 
   if (isAuthenticated) {
-    return (
-      <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
-        <SiteHeader />
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-md w-full rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center shadow-xl">
-            <div className="mx-auto size-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center font-mono text-xl font-bold">
-              404
-            </div>
-            <h1 className="mt-4 text-2xl font-medium tracking-tight">{t("error.404", locale)}</h1>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              {t("error.404desc", locale)}
-            </p>
-            <div className="mt-6">
-              <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium">
-                <Link to={role === "farmer" ? "/farmer" : "/operator"}>
-                  <ArrowLeft className="mr-2 size-4" />
-                  {role === "farmer" ? t("error.returnFarmer", locale) : t("error.returnOperator", locale)}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </main>
-        <SiteFooter />
-      </div>
-    );
+    return <AuthenticatedHome role={role} farmerId={farmerId} operatorId={operatorId} />;
+  }
   }
 
   return (
@@ -253,6 +233,212 @@ function Stat({
         <CountUp value={n} decimals={decimals} suffix={suffix} />
       </p>
       <p className="mt-0.5 text-[11px] text-paper/70">{label}</p>
+    </div>
+  );
+}
+
+function AuthenticatedHome({ role, farmerId, operatorId }: { role: Role; farmerId: string; operatorId: string }) {
+  const farmersList = useGranary((s) => s.farmersList);
+  const operatorsList = useGranary((s) => s.operatorsList);
+  const lots = useGranary((s) => s.lots);
+  const facilities = useGranary((s) => s.facilities);
+  const farmerRequests = useGranary((s) => s.farmerRequests);
+
+  const currentFarmer = farmersList.find((f) => f.id === farmerId) || farmersList[0];
+  const currentOperator = operatorsList.find((o) => o.id === operatorId) || operatorsList[0];
+
+  const myLots = lots.filter((l) => l.farmerId === farmerId && l.status !== "released");
+  const currentOp = operatorsList.find((o) => o.id === operatorId);
+  const operatorFacilities = currentOp ? facilities.filter((f) => currentOp.facilityIds.includes(f.id)) : [];
+
+  const activeRequestsCount = farmerRequests.filter(
+    (r) => (role === "farmer" ? r.farmerId === farmerId : true) && r.status === "pending"
+  ).length;
+
+  return (
+    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground relative overflow-hidden">
+      <SiteHeader />
+      <main className="flex-1 px-4 py-8 md:px-6 md:py-12 max-w-[1400px] mx-auto w-full space-y-8">
+        {/* Welcome Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-emerald-900/10 to-transparent p-6 md:p-8 shadow-lg relative overflow-hidden"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                  <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Active Session · {role === "farmer" ? "Farmer Account" : "Warehouse Owner Desk"}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/20 px-2.5 py-0.5 text-[11px] font-mono font-medium text-emerald-700 dark:text-emerald-300">
+                  Online
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-4xl font-medium tracking-tight">
+                Welcome back, {role === "farmer" ? currentFarmer?.name : currentOperator?.name}!
+              </h1>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                {role === "farmer"
+                  ? `Manage harvest storage lots in Niphad & Nashik, search cold rooms, and track requests.`
+                  : `Monitor warehouse capacity, approve incoming farmer requests, and publish yard rates.`}
+              </p>
+            </div>
+
+            {/* Direct Desk Launch Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <Button asChild size="lg" className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium shadow-md">
+                <Link to={role === "farmer" ? "/farmer" : "/operator"}>
+                  {role === "farmer" ? <Tractor className="mr-2 size-5" /> : <Warehouse className="mr-2 size-5" />}
+                  Open {role === "farmer" ? "Farmer Desk" : "Warehouse Desk"}
+                  <ArrowRight className="ml-2 size-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-border hover:bg-muted"
+              >
+                <Link to={role === "farmer" ? "/operator" : "/farmer"}>
+                  Switch to {role === "farmer" ? "Warehouse Desk" : "Farmer Desk"}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Quick Stats Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <SpotlightCard className="p-5 border border-border bg-card">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Lots</span>
+              <Layers className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="mt-3 text-2xl font-mono font-bold text-foreground">
+              {role === "farmer" ? myLots.length : operatorFacilities.length}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {role === "farmer" ? "Stored lots in network" : "Facilities under management"}
+            </p>
+          </SpotlightCard>
+
+          <SpotlightCard className="p-5 border border-border bg-card">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pending Requests</span>
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="mt-3 text-2xl font-mono font-bold text-foreground">
+              {activeRequestsCount}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {role === "farmer" ? "Requests awaiting yard approval" : "Incoming requests to review"}
+            </p>
+          </SpotlightCard>
+
+          <SpotlightCard className="p-5 border border-border bg-card">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Network Yards</span>
+              <MapPin className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="mt-3 text-2xl font-mono font-bold text-foreground">
+              {facilities.length}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Verified cold rooms & dry yards</p>
+          </SpotlightCard>
+
+          <SpotlightCard className="p-5 border border-border bg-card">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Capacity</span>
+              <Warehouse className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="mt-3 text-2xl font-mono font-bold text-foreground">
+              {facilities.reduce((sum, f) => sum + f.capacityTons, 0)} t
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Nashik storage network peak</p>
+          </SpotlightCard>
+        </div>
+
+        {/* Feature Cards Grid */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Desk Access Card */}
+          <SpotlightCard className="p-6 md:p-8 border border-border bg-card space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Tractor className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-medium text-lg">Farmer Storage Desk</h3>
+                <p className="text-xs text-muted-foreground">Search facilities, request bays, and track harvest lots.</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Browse interactive maps of cold storages and dry yards across Nashik, check live daily rates, submit allocation requests, and monitor your stored crops.
+            </p>
+            <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium">
+              <Link to="/farmer">
+                Go to Farmer Desk <ArrowRight className="ml-2 size-4" />
+              </Link>
+            </Button>
+          </SpotlightCard>
+
+          {/* Owner Desk Access Card */}
+          <SpotlightCard className="p-6 md:p-8 border border-border bg-card space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Warehouse className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-medium text-lg">Warehouse Owner Desk</h3>
+                <p className="text-xs text-muted-foreground">Review incoming farmer requests, manage yards, and track capacity.</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Review pending storage applications from farmers, allocate yard space, publish daily rental rates (₹/ton/day), and view occupancy metrics.
+            </p>
+            <Button asChild variant="outline" className="w-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10">
+              <Link to="/operator">
+                Go to Warehouse Desk <ArrowRight className="ml-2 size-4" />
+              </Link>
+            </Button>
+          </SpotlightCard>
+        </div>
+
+        {/* Network Facilities Preview */}
+        <div className="rounded-3xl border border-border bg-card p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-medium">Verified Storage Facilities</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Explore available yards across Nashik and Niphad.</p>
+            </div>
+            <PinLegend />
+          </div>
+
+          <CardCarousel>
+            {facilities.slice(0, 8).map((fac) => (
+              <CarouselCard key={fac.id}>
+                <img
+                  src={fac.photo}
+                  alt={fac.name}
+                  className="h-36 w-full object-cover outline outline-1 -outline-offset-1 outline-black/10"
+                />
+                <div className="p-3.5">
+                  <p className="font-medium text-sm text-foreground truncate">{fac.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {fac.city} · {KIND_LABEL[fac.kind]}
+                  </p>
+                  <p className="mt-2 text-xs font-mono font-semibold text-emerald-700 dark:text-emerald-400">
+                    ₹{fac.ratePerTonDay}/ton/day · {fac.capacityTons} t
+                  </p>
+                </div>
+              </CarouselCard>
+            ))}
+          </CardCarousel>
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

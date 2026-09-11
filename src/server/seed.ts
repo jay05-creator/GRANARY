@@ -19,7 +19,20 @@ export const farmer: Person = {
   photo: "https://api.dicebear.com/9.x/lorelei/svg?seed=MeeraKulkarni&backgroundColor=d7e4d4",
 };
 
+export const adminFarmer: Person = {
+  id: "admin",
+  name: "System Admin",
+  farm: "Granary Admin Operations",
+  village: "Nashik Belt",
+  district: "Nashik",
+  crops: ["Grapes", "Onion", "Pomegranate", "Raisins"],
+  lat: 20.08,
+  lng: 74.11,
+  photo: "https://api.dicebear.com/9.x/lorelei/svg?seed=Admin&backgroundColor=d7e4d4",
+};
+
 export const farmers: Person[] = [
+  adminFarmer,
   farmer,
   {
     id: "farmer-devidas",
@@ -56,7 +69,15 @@ export const farmers: Person[] = [
   },
 ];
 
+export const adminOperator: Operator = {
+  id: "op-admin",
+  name: "Granary Admin Warehouse Network",
+  contact: "admin@granary-storage.in",
+  facilityIds: ["fac-mohadi", "fac-midc", "fac-lasalgaon", "fac-pimpalgaon", "fac-igatpuri", "fac-dindori", "fac-ozar", "fac-sinnar"],
+};
+
 export const operators: Operator[] = [
+  adminOperator,
   {
     id: DEMO_OPERATOR_ID,
     name: "Sahyadri Cold Chain",
