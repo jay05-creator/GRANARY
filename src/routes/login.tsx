@@ -277,26 +277,6 @@ function LoginPage() {
       setAuthLoading(false);
     }
   };
-      }
-
-      toast.success("Signed in successfully!", {
-        description: `Welcome to ${loginRole === "farmer" ? "Farmer" : "Warehouse"} Desk.`,
-      });
-      const targetId = loginRole === "farmer" ? "admin" : "op-admin";
-      login(loginRole, targetId);
-      navigate({ to: loginRole === "farmer" ? "/farmer" : "/operator" });
-    } catch (err) {
-      console.error("[AUTH] Login error:", err);
-      toast.success("Signed in!", {
-        description: `Welcome to ${loginRole === "farmer" ? "Farmer" : "Warehouse"} Desk.`,
-      });
-      const targetId = loginRole === "farmer" ? "admin" : "op-admin";
-      login(loginRole, targetId);
-      navigate({ to: loginRole === "farmer" ? "/farmer" : "/operator" });
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   /** Register — direct account creation (no OTP) */
   const handleRegister = async (e: React.FormEvent) => {

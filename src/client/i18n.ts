@@ -118,7 +118,7 @@ export type TranslationKey =
   | "operator.openStorage"
   | "operator.incomingRequests";
 
-const translations: Record<Locale, Record<TranslationKey, string>> = {
+const translations: Record<Locale, Partial<Record<TranslationKey, string>>> & { en: Record<TranslationKey, string> } = {
   en: {
     "nav.home": "Home",
     "nav.farmerDesk": "Farmer desk",

@@ -29,7 +29,6 @@ function Home() {
   if (isAuthenticated) {
     return <AuthenticatedHome role={role} farmerId={farmerId} operatorId={operatorId} />;
   }
-  }
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
