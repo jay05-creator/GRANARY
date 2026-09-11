@@ -40,7 +40,7 @@ Extract the following information and return ONLY a JSON object with this exact 
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: [
           {
             role: "user",

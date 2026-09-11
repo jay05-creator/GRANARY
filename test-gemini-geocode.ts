@@ -2,7 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("Please add GEMINI_API_KEY to your .env file to run this test.");
+  process.exit(1);
+}
+
+const ai = new GoogleGenAI({ apiKey });
 const prompt = `Geocode the following address: "Chandori village road, Niphad, Nashik, Maharashtra".
 Return ONLY a JSON object with:
 {
@@ -12,7 +18,7 @@ Return ONLY a JSON object with:
   "displayName": "<formatted full address>"
 }`;
 ai.models.generateContent({
-  model: 'gemini-2.5-flash',
+  model: 'gemini-3.6-flash',
   contents: prompt
 }).then(res => {
   console.log(res.text);

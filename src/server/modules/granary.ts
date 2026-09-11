@@ -28,7 +28,7 @@ function newId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function geocodeWithGemini(address: string, city: string) {
+export async function geocodeWithGemini(address: string, city: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
   const ai = new GoogleGenAI({ apiKey });
@@ -41,7 +41,7 @@ Return ONLY a JSON object with:
 }`;
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: prompt
     });
     const text = response.text || "{}";
@@ -975,7 +975,7 @@ Respond ONLY with a JSON object with this exact structure:
 }`;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.6-flash',
           contents: prompt
         });
 
