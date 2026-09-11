@@ -8,13 +8,55 @@ import { getSql } from "@/server/db";
 import { authMiddleware } from "@/shared/auth/middleware";
 import { encryptDocument } from "@/server/crypto.server";
 import { sanitizeText, sanitizeName, sanitizePhone, sanitizeLocation } from "@/shared/sanitize";
-import { NASHIK_BELT_CITIES } from "@/shared/geocoding";
 import { GoogleGenAI } from "@google/genai";
+
+const NASHIK_BELT_CITIES: Record<string, { lat: number; lng: number }> = {
+  Niphad: { lat: 20.0797, lng: 74.1106 },
+  Mohadi: { lat: 20.0194, lng: 73.8702 },
+  Dindori: { lat: 20.2036, lng: 73.8311 },
+  Nashik: { lat: 19.9975, lng: 73.7898 },
+  Lasalgaon: { lat: 20.1426, lng: 74.2326 },
+  Pimpalgaon: { lat: 20.1648, lng: 73.9921 },
+  Sinnar: { lat: 19.8458, lng: 73.9961 },
+  Igatpuri: { lat: 19.6957, lng: 73.5626 },
+  Kopargaon: { lat: 19.8854, lng: 74.4761 },
+};
 
 // ——— helpers ———
 
 function newId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function geocodeWithGemini(address: string, city: string) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `Geocode the following address accurately: "${address}, ${city}, Maharashtra, India".
+Return ONLY a JSON object with:
+{
+  "lat": <number>,
+  "lng": <number>,
+  "isValid": <boolean, true if the address seems like a real place that can be mapped, false if it's completely fake/nonsense or cannot be located>
+}`;
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    const text = response.text || "{}";
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
+    const parsed = JSON.parse(jsonMatch[1].trim());
+    if (typeof parsed.lat !== "number" || typeof parsed.lng !== "number") return null;
+    return {
+      lat: parsed.lat,
+      lng: parsed.lng,
+      isValid: Boolean(parsed.isValid)
+    };
+  } catch (e) {
+    console.error("Gemini geocoding failed:", e);
+    return null;
+  }
 }
 
 /** Simple rule-based advisory (no external LLM required). */
@@ -238,9 +280,23 @@ export const addFacility = createServerFn({ method: "POST" })
       throw new Error("Only operators can list storage. Complete operator registration first.");
     }
     const id = newId("fac");
-    const cityMatch = NASHIK_BELT_CITIES[data.city] || NASHIK_BELT_CITIES.Nashik || { lat: 20.08, lng: 74.11 };
-    const lat = typeof data.lat === "number" ? data.lat : cityMatch.lat;
-    const lng = typeof data.lng === "number" ? data.lng : cityMatch.lng;
+    let lat = data.lat;
+    let lng = data.lng;
+
+    if (lat === undefined || lng === undefined) {
+      const geo = await geocodeWithGemini(data.address, data.city);
+      if (geo) {
+        if (!geo.isValid) {
+          throw new Error("The provided address does not exist or could not be mapped. Please provide a valid address.");
+        }
+        lat = geo.lat;
+        lng = geo.lng;
+      } else {
+        const cityMatch = NASHIK_BELT_CITIES[data.city] || NASHIK_BELT_CITIES.Nashik || { lat: 20.08, lng: 74.11 };
+        lat = cityMatch.lat;
+        lng = cityMatch.lng;
+      }
+    }
     // Sanitize user input before storage
     const sanitizedName = sanitizeName(data.name);
     const sanitizedAddress = sanitizeLocation(data.address);
@@ -727,8 +783,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-sahyadri",
       name: "Sahyadri Packhouse",
       kind: "packhouse",
-      lat: 20.0194,
-      lng: 73.8702,
+      lat: 20.0869,
+      lng: 74.1130,
       address: "Mohadi Road, near grape collection shed",
       city: "Mohadi",
       capacity: 86,
@@ -744,8 +800,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-coldstar",
       name: "ColdStar Nashik MIDC",
       kind: "cold",
-      lat: 19.9912,
-      lng: 73.7874,
+      lat: 20.0071,
+      lng: 73.7850,
       address: "Plot 14, Satpur MIDC",
       city: "Nashik",
       capacity: 120,
@@ -761,8 +817,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-godavari",
       name: "Godavari Cold Chain",
       kind: "cold",
-      lat: 19.8854,
-      lng: 74.4761,
+      lat: 19.8830,
+      lng: 74.4833,
       address: "Ahmednagar Road, Kopargaon",
       city: "Kopargaon",
       capacity: 70,
@@ -778,8 +834,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-lasal",
       name: "Lasalgaon Onion Yard",
       kind: "dry",
-      lat: 20.1426,
-      lng: 74.2326,
+      lat: 20.1330,
+      lng: 74.2374,
       address: "APMC yard, Lasalgaon",
       city: "Lasalgaon",
       capacity: 240,
@@ -795,8 +851,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-deccan",
       name: "Deccan Dry Store",
       kind: "dry",
-      lat: 20.1648,
-      lng: 73.9921,
+      lat: 20.1640,
+      lng: 73.9865,
       address: "Pimpalgaon Baswant bypass",
       city: "Pimpalgaon",
       capacity: 54,
@@ -812,8 +868,8 @@ export const seedDemoCatalog = createServerFn({ method: "POST" }).handler(async 
       op: "op-sahyadri",
       name: "Igatpuri Hill Cold",
       kind: "cold",
-      lat: 19.6957,
-      lng: 73.5626,
+      lat: 19.6949,
+      lng: 73.5570,
       address: "Ghoti Road, Igatpuri ghat",
       city: "Igatpuri",
       capacity: 38,

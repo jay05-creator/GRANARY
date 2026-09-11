@@ -20,7 +20,6 @@ import {
   Compass,
   LocateFixed,
 } from "lucide-react";
-import { geocodeAddress } from "@/shared/geocoding";
 import { SiteHeader } from "@/client/components/layout/site-header";
 import { StorageMap, PinLegend } from "@/client/components/map/storage-map";
 import { RequestReviewDialog } from "@/client/components/operator/request-review-dialog";
@@ -596,49 +595,10 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
   const [tempRange, setTempRange] = useState("0 to 4 C");
   const [selectedCrops, setSelectedCrops] = useState<string[]>(["Grapes", "Onion"]);
 
-  const [lat, setLat] = useState<number | undefined>(undefined);
-  const [lng, setLng] = useState<number | undefined>(undefined);
-  const [geocoding, setGeocoding] = useState(false);
-  const [geocodeSource, setGeocodeSource] = useState<"nominatim" | "city_fallback" | null>(null);
-  const [geocodeLocationName, setGeocodeLocationName] = useState<string>("");
-  const [isAddressValid, setIsAddressValid] = useState<boolean | null>(null);
-  const [geocodeWarning, setGeocodeWarning] = useState<string>("");
-  const [allowUnverifiedFallback, setAllowUnverifiedFallback] = useState<boolean>(false);
-
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const cropOptions = ["Grapes", "Onion", "Raisins", "Pomegranate", "Tomato", "Grain", "Strawberry"];
-
-  // Run Nominatim geocoding when address or city changes
-  const runGeocode = async (addrToUse = address, cityToUse = city) => {
-    if (!addrToUse.trim()) return;
-    setGeocoding(true);
-    setGeocodeWarning("");
-    try {
-      const res = await geocodeAddress(addrToUse, cityToUse);
-      setLat(res.lat);
-      setLng(res.lng);
-      setGeocodeSource(res.source);
-      setIsAddressValid(res.isValid);
-      setGeocodeLocationName(res.displayName);
-      if (res.warning) {
-        setGeocodeWarning(res.warning);
-      }
-    } catch {
-      /* ignore */
-    } finally {
-      setGeocoding(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (address.trim()) {
-        runGeocode(address, city);
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [address, city]);
 
   const toggleCrop = (c: string) => {
     if (selectedCrops.includes(c)) {
@@ -648,7 +608,7 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
     }
   };
 
-  const [saving, setSaving] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -672,29 +632,6 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
     setSaving(true);
     setError("");
     try {
-      // If geocode hasn't run yet or returned invalid, run now
-      let finalLat = lat;
-      let finalLng = lng;
-      let valid = isAddressValid;
-
-      if (finalLat === undefined || finalLng === undefined || valid === null) {
-        const res = await geocodeAddress(address, city);
-        finalLat = res.lat;
-        finalLng = res.lng;
-        valid = res.isValid;
-        setIsAddressValid(res.isValid);
-        setGeocodeSource(res.source);
-        if (res.warning) setGeocodeWarning(res.warning);
-      }
-
-      if (valid === false && !allowUnverifiedFallback) {
-        setError(
-          "Address Could Not Be Verified on Map: OpenStreetMap Nominatim could not locate this street address. Please correct the address or check the box below to proceed with town fallback location."
-        );
-        setSaving(false);
-        return;
-      }
-
       // Local store for immediate UI
       const fac = addFacility({
         name,
@@ -705,8 +642,8 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
         kind,
         tempRange: kind === "cold" ? tempRange : undefined,
         crops: selectedCrops,
-        lat: finalLat,
-        lng: finalLng,
+        lat: undefined,
+        lng: undefined,
       });
 
       try {
@@ -723,8 +660,8 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
             kind,
             tempRange: kind === "cold" ? tempRange : undefined,
             crops: selectedCrops,
-            lat: finalLat,
-            lng: finalLng,
+            lat: undefined,
+            lng: undefined,
           },
         });
         try {
@@ -802,17 +739,6 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
       </div>
 
       <div>
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-foreground">Specific Street Address</label>
-          <button
-            type="button"
-            onClick={() => runGeocode()}
-            className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-          >
-            <LocateFixed className="size-3" />
-            Verify Pin Location
-          </button>
-        </div>
         <input
           type="text"
           placeholder="e.g. Plot 14, Satpur MIDC"
@@ -820,74 +746,6 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
           onChange={(e) => setAddress(e.target.value)}
           className="mt-1 w-full rounded-xl border border-border bg-muted/50 px-3.5 py-2 text-sm focus:border-emerald-500 focus:outline-none"
         />
-
-        {/* Nominatim Geocoding Status & Warning Card */}
-        {address.trim() && (
-          <div className="mt-2.5 space-y-2">
-            {geocoding ? (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs flex items-center gap-2">
-                <Globe className="size-3.5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-                <span className="font-medium text-emerald-800 dark:text-emerald-300">
-                  Verifying address on map with Nominatim…
-                </span>
-              </div>
-            ) : isAddressValid === true ? (
-              <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    Verified Address Pin (Accurate GPS)
-                  </span>
-                  {lat !== undefined && lng !== undefined && (
-                    <span className="font-mono text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-background/60 px-2 py-0.5 rounded-md border border-border">
-                      {lat}° N, {lng}° E
-                    </span>
-                  )}
-                </div>
-                {geocodeLocationName && (
-                  <p className="mt-1 text-[11px] text-muted-foreground truncate">
-                    Map target: {geocodeLocationName}
-                  </p>
-                )}
-              </div>
-            ) : isAddressValid === false ? (
-              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2">
-                    <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-amber-900 dark:text-amber-200 block">
-                        ⚠️ Address Unverified by Nominatim
-                      </span>
-                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300 mt-0.5 leading-relaxed">
-                        {geocodeWarning ||
-                          `Could not locate "${address}" on the map. Please check for spelling mistakes or add a nearby landmark.`}
-                      </p>
-                    </div>
-                  </div>
-                  {lat !== undefined && lng !== undefined && (
-                    <span className="font-mono text-[10px] text-muted-foreground shrink-0 font-bold bg-background/60 px-1.5 py-0.5 rounded border border-border">
-                      Fallback Pin: {lat}°, {lng}°
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-amber-500/20 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="allowFallback"
-                    checked={allowUnverifiedFallback}
-                    onChange={(e) => setAllowUnverifiedFallback(e.target.checked)}
-                    className="rounded border-amber-500 text-amber-600 focus:ring-amber-500"
-                  />
-                  <label htmlFor="allowFallback" className="text-[11px] font-medium text-amber-900 dark:text-amber-200 cursor-pointer">
-                    Proceed with town center fallback pin anyway
-                  </label>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

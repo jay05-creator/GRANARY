@@ -1,6 +1,18 @@
 import { create } from "zustand";
+
+const NASHIK_BELT_CITIES: Record<string, { lat: number; lng: number }> = {
+  Niphad: { lat: 20.0797, lng: 74.1106 },
+  Mohadi: { lat: 20.0194, lng: 73.8702 },
+  Dindori: { lat: 20.2036, lng: 73.8311 },
+  Nashik: { lat: 19.9975, lng: 73.7898 },
+  Lasalgaon: { lat: 20.1426, lng: 74.2326 },
+  Pimpalgaon: { lat: 20.1648, lng: 73.9921 },
+  Sinnar: { lat: 19.8458, lng: 73.9961 },
+  Igatpuri: { lat: 19.6957, lng: 73.5626 },
+  Kopargaon: { lat: 19.8854, lng: 74.4761 },
+};
+
 import type { Facility, FacilityKind, FarmerRequest, Lot, MapFilter, Operator, Person, PinKind, Role } from "./types";
-import { NASHIK_BELT_CITIES } from "./geocoding";
 import {
   DEMO_FARMER_ID,
   DEMO_OPERATOR_ID,
