@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 const NASHIK_BELT_CITIES: Record<string, { lat: number; lng: number }> = {
   Niphad: { lat: 20.0797, lng: 74.1106 },
@@ -130,7 +131,9 @@ export interface GranaryState {
   dbHydrated: boolean;
 }
 
-export const useGranary = create<GranaryState>((set, get) => ({
+export const useGranary = create<GranaryState>()(
+  persist(
+    (set, get) => ({
   role: "farmer",
   farmerId: DEMO_FARMER_ID,
   operatorId: DEMO_OPERATOR_ID,
@@ -431,7 +434,18 @@ export const useGranary = create<GranaryState>((set, get) => ({
         l.id === lotId ? { ...l, status: "released" as const } : l,
       ),
     }),
-}));
+    }),
+    {
+      name: "granary-storage",
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        role: state.role,
+        farmerId: state.farmerId,
+        operatorId: state.operatorId,
+      }),
+    }
+  )
+);
 
 export { farmer, operators };
 

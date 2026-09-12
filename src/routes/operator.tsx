@@ -161,7 +161,7 @@ function OperatorDesk() {
       <div className="flex min-h-[100dvh] flex-col bg-transparent text-foreground">
         <SiteHeader />
         <main className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-md w-full rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center shadow-xl">
+          <div className="max-w-md w-full rounded-3xl border border-destructive bg-card p-8 text-center shadow-xl">
             <div className="mx-auto size-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
               <ShieldAlert className="size-7" />
             </div>
