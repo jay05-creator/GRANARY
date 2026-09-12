@@ -293,7 +293,10 @@ function LoginPage() {
 
         if (error) {
           setAuthLoading(false);
-          setAuthError(error.message || "Invalid mobile number or password.");
+          const msg = error.message?.toLowerCase().includes("email") 
+            ? "Invalid mobile number or password." 
+            : (error.message || "Invalid mobile number or password.");
+          setAuthError(msg);
           return;
         }
       }
