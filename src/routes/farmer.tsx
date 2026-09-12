@@ -8,7 +8,6 @@ import { FacilityDetail } from "@/client/components/farmer/facility-detail";
 import { BookDialog } from "@/client/components/farmer/book-dialog";
 import { AiRequestModal } from "@/client/components/farmer/ai-request-modal";
 import { MarketTrendsModal } from "@/client/components/farmer/market-trends-modal";
-import { FarmerApprovalAlertModal } from "@/client/components/farmer/approval-alert-modal";
 import { Badge } from "@/client/components/ui/badge";
 
 import { Button } from "@/client/components/ui/button";
@@ -49,13 +48,6 @@ function FarmerDesk() {
     refreshFromDb();
   }, []);
 
-  const approvedNotification = useMemo(
-    () =>
-      farmerRequests.find(
-        (r) => r.farmerId === farmerId && r.status === "approved" && !r.notifiedFarmer
-      ) || null,
-    [farmerRequests, farmerId]
-  );
   const myLots = useMemo(
     () => lots.filter((l) => l.farmerId === farmerId && l.status !== "released"),
     [lots, farmerId],
@@ -65,7 +57,6 @@ function FarmerDesk() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [marketModalOpen, setMarketModalOpen] = useState(false);
-  const [approvalModalOpen, setApprovalModalOpen] = useState(true);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
 
@@ -439,11 +430,6 @@ function FarmerDesk() {
       <MarketTrendsModal
         open={marketModalOpen}
         onOpenChange={setMarketModalOpen}
-      />
-      <FarmerApprovalAlertModal
-        open={approvalModalOpen && !!approvedNotification}
-        onOpenChange={setApprovalModalOpen}
-        request={approvedNotification}
       />
       <ProfileEditDialog
         open={profileEditOpen}

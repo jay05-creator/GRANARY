@@ -31,6 +31,7 @@ import { SiteHeader } from "@/client/components/layout/site-header";
 import { StorageMap, PinLegend } from "@/client/components/map/storage-map";
 import { RequestReviewDialog } from "@/client/components/operator/request-review-dialog";
 import { ProfileEditDialog } from "@/client/components/profile-edit-dialog";
+import { EnwrDialog } from "@/client/components/operator/enwr-dialog";
 import { signOut } from "@/shared/auth/client";
 import { useLocale } from "@/client/components/locale-provider";
 import { t } from "@/client/i18n";
@@ -67,6 +68,7 @@ function OperatorDesk() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [myProfile, setMyProfile] = useState<Record<string, unknown> | null>(null);
+  const [selectedLotForEnwr, setSelectedLotForEnwr] = useState<any | null>(null);
 
   useEffect(() => {
     refreshFromDb();
@@ -454,19 +456,30 @@ function OperatorDesk() {
               {inbound.map((lot) => {
                 const fac = all.find((f) => f.id === lot.facilityId);
                 return (
-                  <li key={lot.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {lot.variety} {lot.crop}
-                      </p>
-                      <p className="text-[12px] text-muted-foreground">
-                        Yard: <strong className="text-foreground">{fac?.name}</strong> ({fac?.city}) · Reserved until {shortDate(lot.until)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">{tons(lot.tons)}</p>
-                      <span className="text-[10px] text-muted-foreground uppercase font-mono">{lot.status}</span>
-                    </div>
+                  <li key={lot.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLotForEnwr(lot)}
+                      className="w-full flex items-center justify-between gap-3 py-3 rounded-xl px-2 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">
+                          {lot.variety} {lot.crop}
+                        </p>
+                        <p className="text-[12px] text-muted-foreground mt-0.5">
+                          Yard: <strong className="text-foreground">{fac?.name}</strong> ({fac?.city}) · Reserved until {shortDate(lot.until)}
+                        </p>
+                        {lot.enwr ? (
+                          <Badge variant="outline" className="mt-1.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30">ENWR: {lot.enwr}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="mt-1.5 font-mono text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30">Pending ENWR</Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">{tons(lot.tons)}</p>
+                        <span className="text-[10px] text-muted-foreground uppercase font-mono">{lot.status}</span>
+                      </div>
+                    </button>
                   </li>
                 );
               })}
@@ -480,6 +493,12 @@ function OperatorDesk() {
         open={!!selectedRequestId}
         onOpenChange={(open) => !open && selectRequest(null)}
         request={activeReviewRequest}
+      />
+
+      <EnwrDialog
+        open={!!selectedLotForEnwr}
+        onOpenChange={(open) => !open && setSelectedLotForEnwr(null)}
+        lot={selectedLotForEnwr}
       />
 
 

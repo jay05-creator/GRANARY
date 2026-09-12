@@ -246,27 +246,6 @@ export function FacilityDetail({
 }
 
 function LotItem({ lot, onRelease }: { lot: Lot; onRelease: () => void }) {
-  const [isEditingEnwr, setIsEditingEnwr] = useState(false);
-  const [enwrValue, setEnwrValue] = useState(lot.enwr || "");
-  const [isLoading, setIsLoading] = useState(false);
-  const updateLot = useGranary((s) => s.updateLot);
-
-  const handleSaveEnwr = async () => {
-    setIsLoading(true);
-    try {
-      const { updateLotServer } = await import("@/server/modules/granary");
-      const res = await updateLotServer({ data: { lotId: lot.id, enwr: enwrValue } });
-      if (res.ok) {
-        updateLot(lot.id, { enwr: enwrValue });
-        setIsEditingEnwr(false);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-muted/70 px-3 py-2.5">
       <div className="flex items-center justify-between">
@@ -286,58 +265,22 @@ function LotItem({ lot, onRelease }: { lot: Lot; onRelease: () => void }) {
       
       {/* ENWR Section */}
       <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
-        {lot.enwr && !isEditingEnwr ? (
+        {lot.enwr ? (
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium">ENWR No: {lot.enwr}</span>
-            <button
-              onClick={() => setIsEditingEnwr(true)}
-              className="text-xs text-emerald-600 hover:underline dark:text-emerald-400"
-            >
-              Edit
-            </button>
           </div>
         ) : (
-          <div className="flex w-full flex-col gap-1.5">
-            <label className="text-[11px] font-medium text-muted-foreground">
-              Enter the respective ENWR no :
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={enwrValue}
-                onChange={(e) => setEnwrValue(e.target.value)}
-                placeholder="e.g. ENWR-12345"
-                className="h-7 flex-1 rounded bg-background px-2 text-xs border border-border outline-none focus:border-emerald-500"
-              />
-              <Button
-                size="sm"
-                className="h-7 text-[11px] px-3 bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={handleSaveEnwr}
-                disabled={isLoading || !enwrValue.trim()}
-              >
-                Save
-              </Button>
-              {isEditingEnwr && lot.enwr && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-[11px] px-2"
-                  onClick={() => {
-                    setIsEditingEnwr(false);
-                    setEnwrValue(lot.enwr || "");
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-medium text-muted-foreground italic">
+              Pending ENWR generation by Operator
+            </span>
           </div>
         )}
       </div>
       <Dialog>
         <DialogTrigger asChild>
           <button className="self-start text-[11px] text-muted-foreground underline decoration-muted-foreground/30 underline-offset-2 hover:text-foreground">
-            Need help regarding the ENWR ?
+            What is an ENWR?
           </button>
         </DialogTrigger>
         <DialogContent className="max-w-sm rounded-3xl bg-card p-6 border border-border shadow-2xl">
@@ -352,7 +295,7 @@ function LotItem({ lot, onRelease }: { lot: Lot; onRelease: () => void }) {
               It allows you to use your stored agricultural produce as collateral for securing bank loans, transferring ownership without physical movement, and participating in electronic trading platforms.
             </p>
             <p>
-              If your warehouse operator provided you with an ENWR number when you stored your lot, please enter it here for record keeping.
+              Your warehouse operator will generate this number and it will appear here for your records.
             </p>
           </div>
         </DialogContent>
@@ -360,3 +303,4 @@ function LotItem({ lot, onRelease }: { lot: Lot; onRelease: () => void }) {
     </li>
   );
 }
+
