@@ -280,7 +280,6 @@ function LoginPage() {
       }
 
       // 4. Authenticate via Better Auth if enabled
-      let authSuccess = false;
       if (authEnabled && emailAndPasswordEnabled) {
         const syntheticEmail = phoneToSyntheticEmail(cleanPhone);
         const { data, error } = await authClient.signIn.email({
@@ -290,26 +289,13 @@ function LoginPage() {
 
         if (data?.token) {
           setBearerToken(data.token);
-          authSuccess = true;
         }
 
         if (error) {
-          console.warn("[AUTH] Better Auth notice:", error.message);
-        }
-      }
-
-      if (!authSuccess && resolvedName) {
-        // Fallback for demo users
-        const expectedDemoPass = resolvedName.replace(/\s+/g, "").toLowerCase() + "123";
-        if (authPassword !== expectedDemoPass) {
           setAuthLoading(false);
-          setAuthError(`Invalid password. (Hint for demo: ${expectedDemoPass})`);
+          setAuthError(error.message || "Invalid mobile number or password.");
           return;
         }
-      } else if (!authSuccess && !resolvedName) {
-        setAuthLoading(false);
-        setAuthError("Invalid mobile number or password.");
-        return;
       }
 
       toast.success("Signed in successfully!", {

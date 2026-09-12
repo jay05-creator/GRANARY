@@ -4,6 +4,7 @@
  * Idempotent (ON CONFLICT DO NOTHING). Requires DATABASE_URL.
  */
 import pg from "pg";
+import { hashPassword } from "better-auth/crypto";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) {
@@ -17,17 +18,29 @@ async function main() {
   const q = (text, params) => pool.query(text, params);
 
   const ops = [
-    { id: "op-sahyadri", name: "Sahyadri Cold Chain", phone: "ops@sahyadri-chain.in" },
-    { id: "op-coldstar", name: "ColdStar Nashik", phone: "yard@coldstar.in" },
-    { id: "op-godavari", name: "Godavari Cold Chain", phone: "desk@godavari-cold.in" },
-    { id: "op-deccan", name: "Deccan Warehousing", phone: "hello@deccan-wh.in" },
-    { id: "op-lasal", name: "Lasalgaon Yard Co-op", phone: "yard@lasalgaon.coop" },
+    { id: "op-sahyadri", name: "Sahyadri Cold Chain", phone: "+91 98230 12345", email: "919823012345@granary.local" },
+    { id: "op-coldstar", name: "ColdStar Nashik", phone: "yard@coldstar.in", email: "yard@coldstar.in" },
+    { id: "op-godavari", name: "Godavari Cold Chain", phone: "desk@godavari-cold.in", email: "desk@godavari-cold.in" },
+    { id: "op-deccan", name: "Deccan Warehousing", phone: "hello@deccan-wh.in", email: "hello@deccan-wh.in" },
+    { id: "op-lasal", name: "Lasalgaon Yard Co-op", phone: "yard@lasalgaon.coop", email: "yard@lasalgaon.coop" },
   ];
   for (const op of ops) {
     await q(
       `insert into profiles (user_id, role, name, phone, farm_or_contact, village_or_company)
        values ($1, 'operator', $2, $3, $3, 'Nashik') on conflict (user_id) do nothing`,
       [op.id, op.name, op.phone],
+    );
+    const pass = op.name.replace(/\s+/g, "").toLowerCase() + "123";
+    const passHash = await hashPassword(pass);
+    await q(
+      `insert into "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt")
+       values ($1, $2, $3, true, now(), now()) on conflict ("id") do nothing`,
+      [op.id, op.name, op.email],
+    );
+    await q(
+      `insert into "account" ("id", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt")
+       values ($1, $2, 'credential', $2, $3, now(), now()) on conflict ("id") do nothing`,
+      [`account-${op.id}`, op.id, passHash],
     );
   }
 
@@ -36,6 +49,17 @@ async function main() {
      values ('farmer-meera', 'farmer', 'Meera Kulkarni', 'Niphad', 'Kulkarni Vineyards', $1, 20.0797, 74.1106, '+91 98220 99887')
      on conflict (user_id) do nothing`,
     [["Grapes", "Raisins", "Onions"]],
+  );
+
+  const meeraPass = await hashPassword("meerakulkarni123");
+  await q(
+    `insert into "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt")
+     values ('farmer-meera', 'Meera Kulkarni', '919822099887@granary.local', true, now(), now()) on conflict ("id") do nothing`,
+  );
+  await q(
+    `insert into "account" ("id", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt")
+     values ('account-farmer-meera', 'farmer-meera', 'credential', 'farmer-meera', $1, now(), now()) on conflict ("id") do nothing`,
+    [meeraPass],
   );
 
   const facs = [
