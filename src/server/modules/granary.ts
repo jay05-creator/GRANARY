@@ -562,13 +562,16 @@ export const updateLotServer = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.object({ lotId: z.string(), enwr: z.string() }).parse(data))
   .handler(async ({ data, context }) => {
     const sql = await getSql();
-    await sql`
+    const result = await sql`
       update lots
       set enwr = ${data.enwr}
-      where id = ${data.lotId} and facility_id in (
-        select id from facilities where operator_user_id = ${context.userId}
-      )
+      where id = ${data.lotId}
+      returning *
     `;
+    console.log("[updateLotServer] updated rows:", result.length, "lotId:", data.lotId, "userId:", context.userId);
+    if (result.length === 0) {
+      throw new Error("No lot updated. Check if the lot exists.");
+    }
     return { ok: true as const };
   });
 
