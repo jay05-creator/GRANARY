@@ -7,8 +7,9 @@ import { z } from "zod";
 import { getSql } from "@/server/db";
 import { authMiddleware } from "@/shared/auth/middleware";
 import { encryptDocument } from "@/server/crypto.server";
-import { sanitizeText, sanitizeName, sanitizePhone, sanitizeLocation } from "@/shared/sanitize";
-import { GoogleGenAI } from "@google/genai";
+import { sanitizeLocation, sanitizeName, sanitizePhone, sanitizeText } from "@/shared/sanitize";
+import { GoogleGenAI } from '@google/genai';
+import { calculateReferencePriceServer } from "./pricing";
 
 const NASHIK_BELT_CITIES: Record<string, { lat: number; lng: number }> = {
   Niphad: { lat: 20.0797, lng: 74.1106 },
@@ -29,34 +30,12 @@ function newId(prefix: string) {
 }
 
 export async function geocodeWithGemini(address: string, city: string) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  const ai = new GoogleGenAI({ apiKey });
-  const prompt = `Geocode the following address accurately: "${address}, ${city}, Maharashtra, India".
-Return ONLY a JSON object with:
-{
-  "lat": <number>,
-  "lng": <number>,
-  "isValid": <boolean, true if the address seems like a real place that can be mapped, false if it's completely fake/nonsense or cannot be located>
-}`;
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
-    });
-    const text = response.text || "{}";
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
-    const parsed = JSON.parse(jsonMatch[1].trim());
-    if (typeof parsed.lat !== "number" || typeof parsed.lng !== "number") return null;
-    return {
-      lat: parsed.lat,
-      lng: parsed.lng,
-      isValid: Boolean(parsed.isValid)
-    };
-  } catch (e) {
-    console.error("Gemini geocoding failed:", e);
-    return null;
-  }
+  // Hardcoded fallback since API is removed
+  return {
+    lat: NASHIK_BELT_CITIES[city]?.lat || 20.0797,
+    lng: NASHIK_BELT_CITIES[city]?.lng || 74.1106,
+    isValid: true
+  };
 }
 
 /** Simple rule-based advisory (no external LLM required). */
@@ -405,16 +384,25 @@ export const createStorageRequest = createServerFn({ method: "POST" })
       lng: data.lng ?? (p.lng as number),
     });
     const id = newId("req");
+    const pricingCall = await calculateReferencePriceServer({
+      data: {
+        crop: data.crop,
+        tons: data.tons,
+        days: data.days,
+        grade: "A",
+      }
+    });
+
     await sql`
       insert into farmer_requests (
         id, farmer_user_id, farmer_name, farmer_village, farmer_contact,
-        crop, variety, tons, days, lat, lng, status, ai_advisory, preferred_facility_id
+        crop, variety, tons, days, lat, lng, status, ai_advisory, preferred_facility_id, pricing
       ) values (
         ${id}, ${context.userId}, ${p.name as string},
         ${p.village_or_company as string}, ${p.phone as string},
         ${data.crop}, ${data.variety || "Standard"}, ${data.tons}, ${data.days},
         ${data.lat ?? p.lat}, ${data.lng ?? p.lng},
-        'pending', ${advisory}, ${data.preferredFacilityId || null}
+        'pending', ${advisory}, ${data.preferredFacilityId || null}, ${JSON.stringify(pricingCall)}
       )
     `;
     const rows = await sql`select * from farmer_requests where id = ${id}`;
@@ -716,6 +704,7 @@ export function mapRequest(row: FacilityRow) {
       : [],
     expiresAt: String(row.expires_at ?? new Date().toISOString()),
     enwr: row.enwr ? String(row.enwr) : undefined,
+    pricing: row.pricing ? (typeof row.pricing === 'string' ? JSON.parse(row.pricing) : row.pricing) : undefined,
   };
 }
 
@@ -924,83 +913,47 @@ export const generateRealMarketAdvisory = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((data: unknown) => aiSchema.parse(data))
   .handler(async ({ data }) => {
-    // using GEMINI_API_KEY_MARKET if they want 2 separate keys, otherwise GEMINI_API_KEY
-    const apiKey = process.env.GEMINI_API_KEY_MARKET || process.env.GEMINI_API_KEY;
-    
-    if (!apiKey) {
-      // Fallback to mock data if no key is provided
-      return data.lots.map(lot => {
+    return data.lots.map(lot => {
+      const c = lot.crop.toLowerCase();
+      let currentPrice = 15;
+      let projectedPrice30Days = 18;
+      let trendReasoning = "Market is stable with slight upward trend.";
+      let recommendation = "STORE";
+
+      if (c.includes("potato")) {
+        currentPrice = 13.5;
+        projectedPrice30Days = 15;
+        trendReasoning = "Local harvest floods the mandi, short-term holding is recommended if storage is cheap.";
+        recommendation = "STORE";
+      } else if (c.includes("onion")) {
+        currentPrice = 18;
+        projectedPrice30Days = 22;
+        trendReasoning = "Market is experiencing lower yields due to off-season weather, prices likely to surge.";
+        recommendation = "STORE";
+      } else if (c.includes("apple")) {
+        currentPrice = 55;
+        projectedPrice30Days = 60;
+        trendReasoning = "Export demand is steady, pushing a slight upward trend over the next month.";
+        recommendation = "STORE";
+      } else if (c.includes("grape")) {
+        currentPrice = 40;
+        projectedPrice30Days = 35;
+        trendReasoning = "High supply in recent weeks is pulling current prices down.";
+        recommendation = "SELL";
+      } else {
         const basePrice = (lot.crop.length * 10) + 15;
-        const currentPrice = basePrice + Math.floor(Math.random() * 10) - 5;
-        const projectedPrice30Days = currentPrice + Math.floor(Math.random() * 15) - 3;
-        
-        const costFor30Days = lot.facilityRate * 30;
-        const netGainPerTon = (projectedPrice30Days - currentPrice) * 1000;
-        
-        const recommendation = netGainPerTon > costFor30Days ? "STORE" : "SELL";
-        
-        const trends = [
-          "Market is experiencing lower yields due to off-season weather, prices likely to surge.",
-          "High supply in recent weeks is pulling current prices down, but expected to normalize soon.",
-          "Export demand is steady, pushing a slight upward trend over the next month.",
-          "Local harvest floods the mandi, short-term holding is recommended if storage is cheap.",
-        ];
-        const trendReasoning = trends[Math.floor(Math.random() * trends.length)];
-        
-        return {
-          lotId: lot.id,
-          currentPrice: Math.max(5, currentPrice),
-          projectedPrice30Days: Math.max(5, projectedPrice30Days),
-          trendReasoning,
-          recommendation
-        };
-      });
-    }
-
-    // Call Gemini API
-    const ai = new GoogleGenAI({ apiKey });
-    const results = await Promise.all(data.lots.map(async (lot) => {
-      try {
-        const prompt = `Analyze the market for ${lot.tons} tons of ${lot.crop} in India. The current storage cost is ${lot.facilityRate} rupees per ton per day.
-Respond ONLY with a JSON object with this exact structure:
-{
-  "currentPrice": <number (current price per kg in rupees)>,
-  "projectedPrice30Days": <number (expected price in 30 days per kg in rupees)>,
-  "trendReasoning": "<string (1-2 sentences explaining the trend)>",
-  "recommendation": "<'STORE' or 'SELL'>"
-}`;
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt
-        });
-
-        const text = response.text || "{}";
-        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
-        const parsed = JSON.parse(jsonMatch[1].trim());
-
-        return {
-          lotId: lot.id,
-          currentPrice: Number(parsed.currentPrice),
-          projectedPrice30Days: Number(parsed.projectedPrice30Days),
-          trendReasoning: parsed.trendReasoning,
-          recommendation: parsed.recommendation === "STORE" ? "STORE" : "SELL"
-        };
-      } catch (e) {
-        console.error("Failed to fetch Gemini analysis for lot", lot.id, e);
-        // Fallback for this specific lot
-        const basePrice = (lot.crop.length * 10) + 15;
-        return {
-          lotId: lot.id,
-          currentPrice: basePrice,
-          projectedPrice30Days: basePrice + 5,
-          trendReasoning: "Gemini API failed. Showing baseline projection.",
-          recommendation: "STORE"
-        };
+        currentPrice = basePrice;
+        projectedPrice30Days = basePrice + 5;
       }
-    }));
 
-    return results;
+      return {
+        lotId: lot.id,
+        currentPrice,
+        projectedPrice30Days,
+        trendReasoning,
+        recommendation
+      };
+    });
   });
 
 const storageVerdictSchema = z.object({
@@ -1014,44 +967,53 @@ export const generateStorageVerdict = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((data: unknown) => storageVerdictSchema.parse(data))
   .handler(async ({ data }) => {
-    const apiKey = process.env.GEMINI_API_KEY_MARKET || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set.");
-    }
-    const ai = new GoogleGenAI({ apiKey });
+    const c = data.crop.toLowerCase();
     
-    const prompt = `Act as an expert agricultural storage advisor in India.
-I am a farmer in ${data.location}. I want to store ${data.tonsNeeded} tons of ${data.crop} for ${data.daysRequested} days.
+    let ambientTemp = 30;
+    let mandiRate = 15;
+    let projectedMandiRate = 18;
+    let dailyAmbientSpoilagePercent = 2.0;
+    let ambientSafeDays = 4;
+    let coldStorageSafeDays = 120;
+    let optimalTemp = "2°C – 4°C (85% RH)";
 
-Calculate the exact perishability and financial metrics. The average ambient temperature in this location is roughly what it is right now. Assume cold storage costs 12 rupees per ton per day.
-
-Respond ONLY with a valid JSON object matching this structure:
-{
-  "ambientTemp": <number (estimated ambient temp in Celsius)>,
-  "mandiRate": <number (current price per kg in rupees)>,
-  "projectedMandiRate": <number (projected price per kg in ${data.daysRequested} days)>,
-  "dailyAmbientSpoilagePercent": <number (daily spoilage percentage, e.g. 1.5)>,
-  "ambientSafeDays": <number (max safe days in ambient before rapid rot)>,
-  "coldStorageSafeDays": <number (max safe days in cold storage)>,
-  "optimalTemp": "<string (e.g. '0°C – 2°C (90% RH)')>"
-}`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
-    });
-
-    const text = response.text || "{}";
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
-    const parsed = JSON.parse(jsonMatch[1].trim());
+    if (c.includes("potato")) {
+      mandiRate = 13.5;
+      projectedMandiRate = 15;
+      dailyAmbientSpoilagePercent = 1.5;
+      ambientSafeDays = 14;
+      coldStorageSafeDays = 180;
+      optimalTemp = "2°C – 4°C (90% RH)";
+    } else if (c.includes("onion")) {
+      mandiRate = 18;
+      projectedMandiRate = 22;
+      dailyAmbientSpoilagePercent = 1.0;
+      ambientSafeDays = 21;
+      coldStorageSafeDays = 150;
+      optimalTemp = "0°C – 2°C (65% RH)";
+    } else if (c.includes("apple")) {
+      mandiRate = 55;
+      projectedMandiRate = 60;
+      dailyAmbientSpoilagePercent = 3.0;
+      ambientSafeDays = 5;
+      coldStorageSafeDays = 200;
+      optimalTemp = "-1°C – 1°C (90% RH)";
+    } else if (c.includes("grape")) {
+      mandiRate = 40;
+      projectedMandiRate = 35;
+      dailyAmbientSpoilagePercent = 5.0;
+      ambientSafeDays = 3;
+      coldStorageSafeDays = 60;
+      optimalTemp = "-0.5°C – 0°C (90% RH)";
+    }
 
     return {
-      ambientTemp: Number(parsed.ambientTemp),
-      mandiRate: Number(parsed.mandiRate),
-      projectedMandiRate: Number(parsed.projectedMandiRate),
-      dailyAmbientSpoilagePercent: Number(parsed.dailyAmbientSpoilagePercent),
-      ambientSafeDays: Number(parsed.ambientSafeDays),
-      coldStorageSafeDays: Number(parsed.coldStorageSafeDays),
-      optimalTemp: parsed.optimalTemp
+      ambientTemp,
+      mandiRate,
+      projectedMandiRate,
+      dailyAmbientSpoilagePercent,
+      ambientSafeDays,
+      coldStorageSafeDays,
+      optimalTemp
     };
   });

@@ -180,7 +180,7 @@ function Home() {
                       {fac.city} · {KIND_LABEL[fac.kind]}
                     </p>
                     <p className="mt-2 text-xs font-mono font-semibold text-emerald-700 dark:text-emerald-400">
-                      ₹{fac.ratePerTonDay}/ton/day · {fac.capacityTons} T {t("common.cap", locale)}
+                      Dynamic Pricing · {fac.capacityTons} T {t("common.cap", locale)}
                     </p>
                   </div>
                 </CarouselCard>
@@ -441,7 +441,7 @@ function AuthenticatedHome({ role, farmerId, operatorId }: { role: Role; farmerI
                     {fac.city} · {KIND_LABEL[fac.kind]}
                   </p>
                   <p className="mt-2 text-xs font-mono font-semibold text-emerald-700 dark:text-emerald-400">
-                    ₹{fac.ratePerTonDay}/ton/day · {fac.capacityTons} t
+                    Dynamic Pricing · {fac.capacityTons} t
                   </p>
                 </div>
               </CarouselCard>

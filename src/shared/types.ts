@@ -54,6 +54,24 @@ export interface Person {
 
 export type RequestStatus = "pending" | "approved" | "denied";
 
+export interface PricingCalculation {
+  perQuintal: {
+    basePrice: number;
+    sdAdjustment: number;
+    storageCostRecovery: number;
+    seasonalAdjustment: number;
+    sentimentAdjustment: number;
+    qualityAdjustment: number;
+    referencePrice: number;
+    minPrice: number;
+    maxPrice: number;
+  };
+  totalTransactionValue: number;
+  totalMinLimit: number;
+  totalMaxLimit: number;
+  storageFeeTotal: number;
+}
+
 export interface FarmerRequest {
   id: string;
   farmerId: string;
@@ -77,6 +95,7 @@ export interface FarmerRequest {
   ignoredByOperatorIds: string[];
   expiresAt: string;
   enwr?: string;
+  pricing?: PricingCalculation;
 }
 
 export interface Operator {

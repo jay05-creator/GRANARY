@@ -70,7 +70,7 @@ export function FacilityCard({
             />
             <div className="mt-1 flex justify-between text-[11px] tabular-nums text-muted-foreground">
               <span>{tons(left)} free</span>
-              <span>{rupees(facility.ratePerTonDay)}/t·day</span>
+              <span className="text-emerald-700 font-medium dark:text-emerald-400">Dynamic Pricing</span>
             </div>
           </div>
         </div>

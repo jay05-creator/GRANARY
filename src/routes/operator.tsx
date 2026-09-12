@@ -834,7 +834,7 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-foreground">Rate (₹ / Ton / Day)</label>
+          <label className="text-xs font-semibold text-foreground">Base Rate (₹ / Ton / Day)</label>
           <div className="relative mt-1">
             <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-mono">₹</span>
             <input
@@ -846,6 +846,9 @@ function ListStorageForm({ onSuccess }: { onSuccess: (fac: any) => void }) {
               className="w-full rounded-xl border border-border bg-muted/50 pl-7 pr-3.5 py-2 text-sm font-mono focus:border-emerald-500 focus:outline-none"
             />
           </div>
+          <p className="mt-1 text-[10px] text-muted-foreground leading-tight">
+            This serves as your baseline. Actual booking rates are dynamically adjusted via the Reference Pricing Engine to comply with volatility buffers and MSP limits.
+          </p>
         </div>
       </div>
 

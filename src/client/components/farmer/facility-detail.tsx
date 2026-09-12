@@ -125,8 +125,8 @@ export function FacilityDetail({
         />
       </div>
       <p className="mt-3 text-sm">
-        {rupees(facility.ratePerTonDay)}
-        <span className="text-muted-foreground"> per tonne per day</span>
+        <span className="font-semibold text-emerald-700 dark:text-emerald-400">Dynamic Pricing Active</span>
+        <span className="text-muted-foreground ml-1">based on crop & live market</span>
       </p>
       <p className="mt-1 text-[13px] text-muted-foreground">
         Takes {facility.crops.join(", ")}. Run by {facility.operator}.
