@@ -376,7 +376,13 @@ function AuthenticatedHome({ role, farmerId, operatorId }: { role: Role; farmerI
             <p className="text-xs text-muted-foreground leading-relaxed">
               Browse interactive maps of cold storages and dry yards across Nashik, check live daily rates, submit allocation requests, and monitor your stored crops.
             </p>
-            <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium">
+            <Button 
+              asChild 
+              variant={role === "farmer" ? "default" : "outline"} 
+              className={role === "farmer" 
+                ? "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium" 
+                : "w-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"}
+            >
               <Link to="/farmer">
                 Go to Farmer Desk <ArrowRight className="ml-2 size-4" />
               </Link>
@@ -397,7 +403,13 @@ function AuthenticatedHome({ role, farmerId, operatorId }: { role: Role; farmerI
             <p className="text-xs text-muted-foreground leading-relaxed">
               Review pending storage applications from farmers, allocate yard space, publish daily rental rates (₹/ton/day), and view occupancy metrics.
             </p>
-            <Button asChild variant="outline" className="w-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10">
+            <Button 
+              asChild 
+              variant={role === "operator" ? "default" : "outline"} 
+              className={role === "operator" 
+                ? "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium" 
+                : "w-full border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"}
+            >
               <Link to="/operator">
                 Go to Warehouse Desk <ArrowRight className="ml-2 size-4" />
               </Link>
