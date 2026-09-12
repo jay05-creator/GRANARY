@@ -82,8 +82,17 @@ function RootDocument() {
               <DbHydrateGate>
                 <Outlet />
               </DbHydrateGate>
+              <div className="fixed bottom-4 right-4 z-[9999] flex flex-col items-end gap-0.5 text-xs text-muted-foreground bg-card/80 backdrop-blur-md p-3 rounded-xl border border-border shadow-sm pointer-events-auto">
+                <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Granary Support</p>
+                <div className="flex gap-2">
+                  <a href="tel:8604842898" className="hover:text-foreground transition-colors">📞 8604842898</a>
+                  <span>·</span>
+                  <a href="tel:9099330336" className="hover:text-foreground transition-colors">📞 9099330336</a>
+                </div>
+                <a href="mailto:help.granary@gmail.com" className="hover:text-foreground transition-colors">✉️ help.granary@gmail.com</a>
+              </div>
               <Toaster
-                position="bottom-right"
+                position="top-right"
                 toastOptions={{
                   className:
                     "font-sans !bg-card !text-card-foreground !border-border !shadow-[var(--shadow-border)]",
