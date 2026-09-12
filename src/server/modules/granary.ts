@@ -565,7 +565,9 @@ export const updateLotServer = createServerFn({ method: "POST" })
     await sql`
       update lots
       set enwr = ${data.enwr}
-      where id = ${data.lotId} and farmer_user_id = ${context.userId}
+      where id = ${data.lotId} and facility_id in (
+        select id from facilities where operator_user_id = ${context.userId}
+      )
     `;
     return { ok: true as const };
   });
