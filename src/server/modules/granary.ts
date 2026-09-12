@@ -41,7 +41,7 @@ Return ONLY a JSON object with:
 }`;
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt
     });
     const text = response.text || "{}";
@@ -971,7 +971,7 @@ Respond ONLY with a JSON object with this exact structure:
 }`;
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-2.5-flash',
           contents: prompt
         });
 
@@ -1037,7 +1037,7 @@ Respond ONLY with a valid JSON object matching this structure:
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt
     });
 
