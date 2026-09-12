@@ -572,6 +572,18 @@ export const updateLotServer = createServerFn({ method: "POST" })
     if (result.length === 0) {
       throw new Error("No lot updated. Check if the lot exists.");
     }
+    
+    // Also save to the farmer_request (the accepted request) as requested by the user
+    const lot = result[0];
+    await sql`
+      update farmer_requests
+      set enwr = ${data.enwr}
+      where farmer_user_id = ${lot.farmer_user_id}
+        and allocated_facility_id = ${lot.facility_id}
+        and crop = ${lot.crop}
+        and status = 'approved'
+    `;
+    
     return { ok: true as const };
   });
 
@@ -669,6 +681,7 @@ export function mapLot(row: FacilityRow) {
     storedAt: String(row.stored_at).slice(0, 10),
     until: String(row.until_date).slice(0, 10),
     status: row.status as "stored" | "inbound" | "released",
+    enwr: row.enwr ? String(row.enwr) : undefined,
   };
 }
 
@@ -702,6 +715,7 @@ export function mapRequest(row: FacilityRow) {
       ? row.ignored_by_operator_ids.map(String)
       : [],
     expiresAt: String(row.expires_at ?? new Date().toISOString()),
+    enwr: row.enwr ? String(row.enwr) : undefined,
   };
 }
 

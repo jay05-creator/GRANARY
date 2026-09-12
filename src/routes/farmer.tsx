@@ -396,6 +396,13 @@ function FarmerDesk() {
                       <p className="mt-1 text-[12px] text-muted-foreground">
                         {fac?.name} · {tons(lot.tons)} · until {shortDate(lot.until)}
                       </p>
+                      {lot.enwr && (
+                        <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
+                          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                            ENWR No: {lot.enwr}
+                          </span>
+                        </div>
+                      )}
                     </button>
                   </li>
                 );

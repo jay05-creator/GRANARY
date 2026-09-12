@@ -76,6 +76,7 @@ export interface FarmerRequest {
   notifiedFarmer?: boolean;
   ignoredByOperatorIds: string[];
   expiresAt: string;
+  enwr?: string;
 }
 
 export interface Operator {
