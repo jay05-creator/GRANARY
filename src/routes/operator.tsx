@@ -55,6 +55,7 @@ function OperatorDesk() {
   const role = useGranary((s) => s.role);
   const all = useGranary((s) => s.facilities);
   const operatorsList = useGranary((s) => s.operatorsList);
+  const farmersList = useGranary((s) => s.farmersList);
   const lots = useGranary((s) => s.lots);
   const farmerId = useGranary((s) => s.farmerId);
   const selectedId = useGranary((s) => s.selectedId);
@@ -455,6 +456,7 @@ function OperatorDesk() {
             <ul className="mt-3 divide-y divide-border">
               {inbound.map((lot) => {
                 const fac = all.find((f) => f.id === lot.facilityId);
+                const farmer = farmersList.find((f) => f.id === lot.farmerId);
                 return (
                   <li key={lot.id}>
                     <button
@@ -464,7 +466,7 @@ function OperatorDesk() {
                     >
                       <div>
                         <p className="text-sm font-medium">
-                          {lot.variety} {lot.crop}
+                          {lot.variety} {lot.crop} <span className="text-muted-foreground font-normal ml-1">from {farmer?.name || "Unknown Farmer"}</span>
                         </p>
                         <p className="text-[12px] text-muted-foreground mt-0.5">
                           Yard: <strong className="text-foreground">{fac?.name}</strong> ({fac?.city}) · Reserved until {shortDate(lot.until)}
